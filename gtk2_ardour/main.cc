@@ -261,7 +261,7 @@ int main (int argc, char *argv[])
 
 	load_custom_fonts(); /* needs to happen before any gtk and pango init calls */
 
-	if (!Glib::thread_supported()) {
+	if (!g_thread_supported()) {
 		Glib::thread_init();
 	}
 

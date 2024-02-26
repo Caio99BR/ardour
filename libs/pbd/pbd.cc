@@ -86,7 +86,7 @@ PBD::init ()
 	}
 #endif
 
-	if (!Glib::thread_supported()) {
+	if (!g_thread_supported()) {
 		Glib::thread_init();
 	}
 
