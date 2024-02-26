@@ -1218,9 +1218,6 @@ int main () { int x = SFC_RF64_AUTO_DOWNGRADE; return 0; }
                       lib='regex', uselib_store="REGEX", define_name='HAVE_REGEX_H')
         # TODO put this only where it is needed
         conf.env.append_value('LIB', 'regex')
-        conf.env.append_value('LIB', 'bcrypt')
-        conf.env.append_value('LIB', 'fftw3f_threads')
-
         # TODO this should only be necessary for a debug build
         conf.env.append_value('LIB', 'dbghelp')
     

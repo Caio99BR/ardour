@@ -12,6 +12,7 @@ def options(opt):
 def configure(conf):
     if conf.env['WINDOWS_VST_SUPPORT'] == True:
         conf.check(compiler='cxx', lib='gdi32', mandatory=True, uselib_store='GDI32')
+    conf.check(compiler='cxx', lib='bcrypt', mandatory=True, uselib_store='BCRYPT')
 
 def build(bld):
     if bld.is_defined('VST3_SUPPORT'):
@@ -35,6 +36,7 @@ def build(bld):
             obj.uselib += ' OSX'
         if bld.env['build_target'] == 'mingw':
             obj.uselib += ' GDI32'
+            obj.uselib += ' BCRYPT'
             obj.linkflags = ['-mwindows']
 
         if re.search ("bsd", sys.platform) != None:
