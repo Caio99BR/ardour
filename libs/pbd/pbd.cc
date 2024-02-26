@@ -86,10 +86,6 @@ PBD::init ()
 	}
 #endif
 
-	if (!Glib::thread_supported()) {
-		Glib::thread_init();
-	}
-
 	Gio::init ();
 
 	PBD::ID::init ();

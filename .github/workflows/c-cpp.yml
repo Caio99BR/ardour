@@ -1,0 +1,34 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ "fork-masta" ,"master"]
+  pull_request:
+    branches: [ "fork-masta" ,"master"]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        install: make git
+        pacboy: gcc:x make:x python:x vamp-plugin-sdk:x rubberband:x jack2:x gtkmm:x boost:x lilv:x libjpeg-turbo:x pkg-config:x curl:x libarchive:x liblo:x taglib:x libusb:x drmingw:x aubio:x flac:x cppunit:x suil:x libwebsockets:x
+        update: true
+    - name: make
+      shell: msys2 {0}
+      run: |
+       export CFLAGS="-mstackrealign -mxsave -mmmx -msse"
+       export CPPFLAGS="-mstackrealign -mxsave -mmmx -msse"
+       git config --local user.email "ci@example.com"
+       git config --local user.name "CI Runner"
+       # Create a dummy tag mimicking the format
+       git tag -a "8.2-0-gdummy" -m "Dummy tag for CI"
+       # Run the configuration script
+       python waf configure --dist-target=mingw --prefix=/mingw64 --configdir=/share --check-cxx-compiler=g++ --check-c-compiler=gcc --cxx11 --no-phone-home --optimize --ptformat --with-backends=jack,portaudio,dummy 
+       ./waf -vvv -j1
