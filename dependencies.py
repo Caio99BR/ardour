@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 import tarfile
 import zipfile
 import shutil
+import subprocess
 
 # Configuration
 BASE_URL = "https://nightly.ardour.org/list.php#build_deps"
@@ -16,6 +17,26 @@ INSTALL = False  # Set to True to run 'make install'
 # Ensure directories exist
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 os.makedirs(EXTRACT_DIR, exist_ok=True)
+
+# Function to check if a package is installed and the version is sufficient
+def check_installed_version(package_name, required_version):
+    try:
+        result = subprocess.run([package_name, "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if result.returncode == 0:
+            installed_version = result.stdout.decode().strip().split()[1]  # Assuming version is the second word
+            # Compare versions (this is a simple comparison, needs more advanced handling for complex versions)
+            if installed_version >= required_version:
+                print(f"{package_name} version {installed_version} is sufficient.")
+                return True
+            else:
+                print(f"{package_name} version {installed_version} is lower than required {required_version}.")
+                return False
+        else:
+            print(f"{package_name} is not installed.")
+            return False
+    except Exception as e:
+        print(f"Error checking version of {package_name}: {e}")
+        return False
 
 # Fetch the dependency list page
 response = requests.get(BASE_URL)
@@ -34,6 +55,15 @@ for li in deps_section.find_all("li"):
         continue
     url = link["href"]
     filename = os.path.basename(url)
+    package_name, required_version = filename.split('-')[:2]  # Assume filename format: <name>-<version>
+    required_version = required_version.replace(".tar", "").replace(".gz", "").replace(".bz2", "").replace(".xz", "")
+
+    # Check if the package version is installed and sufficient
+    if check_installed_version(package_name, required_version):
+        print(f"{package_name} is already installed with the required version. Skipping download.")
+        continue
+
+    # If package is not installed or the version is outdated, download and extract
     filepath = os.path.join(DOWNLOAD_DIR, filename)
     extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
 
