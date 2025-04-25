@@ -44,7 +44,7 @@
     "cmake": {
         "url": "http://www.cmake.org/files/v3.18/cmake-3.18.4.tar.gz",
         "msys2_package": "mingw-w64-x86_64-cmake",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "cmake 3.18.4 (macOS)"
     },
     "cppunit": {
@@ -416,7 +416,7 @@
     "uuid": {
         "url": "http://www.mirrorservice.org/sites/ftp.ossp.org/pkg/lib/uuid/uuid-1.6.2.tar.gz",
         "msys2_package": "mingw-w64-x86_64-uuid",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "uuid 1.6.2 (macOS)"
     },
     "vamp": {
