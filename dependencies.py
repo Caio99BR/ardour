@@ -6,6 +6,7 @@ import tarfile
 import zipfile
 import shutil
 import subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Configuration
 BASE_URL = "https://nightly.ardour.org/list.php#build_deps"
@@ -13,6 +14,7 @@ DOWNLOAD_DIR = "downloads"
 EXTRACT_DIR = "extracted"
 INSTALL_DIR = "/usr/local"  # Change this if you want to install elsewhere
 INSTALL = False  # Set to True to run 'make install'
+MAX_THREADS = 4  # Adjust as needed
 
 # Mapping dependency base names to MSYS2 package names
 MSYS2_PACKAGE_MAP = {
@@ -123,6 +125,39 @@ def try_install_msys2_package(package_name):
         print(f"Error installing {package_name}: {e}")
         return False
 
+# Process each dependency
+def download_and_extract(dep):
+    url, filename, force_download = dep
+    try:
+        # Download
+        if force_download:
+            print(f"Force downloading {filename}...")
+        else:
+            print(f"Downloading {filename}...")
+        
+        with requests.get(url, stream=True, timeout=30) as r:
+            r.raise_for_status()
+            with open(os.path.join(DOWNLOAD_DIR, filename), "wb") as f:
+                shutil.copyfileobj(r.raw, f)
+        print(f"✓ Downloaded {filename}")
+
+        # Extract
+        extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
+        if not os.path.exists(extract_path):
+            print(f"Extracting {filename}...")
+            if filename.endswith((".tar.gz", ".tar.bz2", ".tar.xz", ".tgz")):
+                with tarfile.open(os.path.join(DOWNLOAD_DIR, filename), "r:*") as tar:
+                    tar.extractall(path=extract_path, filter=None)
+            elif filename.endswith(".zip"):
+                with zipfile.ZipFile(os.path.join(DOWNLOAD_DIR, filename), "r") as zip_ref:
+                    zip_ref.extractall(path=extract_path)
+            else:
+                print(f"Unknown file format: {filename}")
+        else:
+            print(f"{filename} already extracted.")
+    except Exception as e:
+        print(f"✗ Failed {filename}: {e}")
+
 # Fetch the dependency list page
 response = requests.get(BASE_URL)
 response.raise_for_status()
@@ -133,71 +168,53 @@ deps_section = soup.find("ul", class_="multicolumn")
 if not deps_section:
     raise ValueError("Could not find the list of dependencies.")
 
+download_list = []
+
 # Process each dependency
 for li in deps_section.find_all("li"):
     link = li.find("a")
     if not link or not link.get("href"):
         continue
     url = link["href"]
-
-    # Handle redirect host
-    #if "ftpmirror.gnu.org" in url:
-    #    url = url.replace("ftpmirror.gnu.org", "ftp.gnu.org")
-
     filename = os.path.basename(url)
     base = filename.split('-')[0]
-
     msys2_package = MSYS2_PACKAGE_MAP.get(base)
-    
+
     # Try installing with pacman if MSYS2 package is found and not for Ardour dependencies
     if msys2_package and "ardour.org" not in url:
         if check_msys2_package_installed(msys2_package):
             print(f"{msys2_package} is already installed. Skipping.")
             continue  # Skip downloading source if package is managed by MSYS2
-        else:
+        elif try_install_msys2_package(msys2_package):
             print(f"Required package '{msys2_package}' is not installed.")
-            if try_install_msys2_package(msys2_package):
-                continue  # Skip download and installation if pacman installation succeeded
+            continue  # Skip download if pacman install succeeded
 
     # Force download for dependencies coming from http://ardour.org/
-    if "ardour.org" in url:
-        print(f"Downloading {filename} from Ardour website (modified version)...")
-        force_download = True
-    else:
-        force_download = not os.path.exists(os.path.join(DOWNLOAD_DIR, filename))
+    force_download = "ardour.org" in url
 
-    # Download if necessary
-    if force_download:
-        print(f"Downloading {filename}...")
-        with requests.get(url, stream=True) as r:
-            r.raise_for_status()
-            with open(os.path.join(DOWNLOAD_DIR, filename), "wb") as f:
-                shutil.copyfileobj(r.raw, f)
-    else:
+    # Skip download if file already exists unless we are forcing the download
+    file_path = os.path.join(DOWNLOAD_DIR, filename)
+    if os.path.exists(file_path) and not force_download:
         print(f"{filename} already exists. Skipping download.")
+        extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
+        if not os.path.exists(extract_path):
+            download_list.append((url, filename, force_download))  # still needs extraction
+        else:
+            print(f"{filename} already extracted. Skipping.")
+        continue
 
-    # Extract the downloaded file
-    extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
-    if not os.path.exists(extract_path):
-        print(f"Extracting {filename}...")
-        try:
-            if filename.endswith((".tar.gz", ".tar.bz2", ".tar.xz", ".tgz")):
-                with tarfile.open(os.path.join(DOWNLOAD_DIR, filename), "r:*") as tar:
-                    tar.extractall(path=extract_path, filter=None)
-            elif filename.endswith(".zip"):
-                with zipfile.ZipFile(os.path.join(DOWNLOAD_DIR, filename), "r") as zip_ref:
-                    zip_ref.extractall(path=extract_path)
-            else:
-                print(f"Unknown file format: {filename}")
-                continue
-        except Exception as e:
-            print(f"Failed to extract {filename}: {e}")
-            continue
-    else:
-        print(f"{filename} already extracted. Skipping.")
+    download_list.append((url, filename, force_download))
 
-    # Install the extracted files if required
-    if INSTALL:
+# Download and extract concurrently
+with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
+    futures = [executor.submit(download_and_extract, dep) for dep in download_list]
+    for future in as_completed(futures):
+        future.result()  # exceptions will be printed from inside
+
+# Install if requested
+if INSTALL:
+    for _, filename in download_list:
+        extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
         print(f"Installing {filename}...")
         original_dir = os.getcwd()
         inner_dir = os.path.join(extract_path, filename.split('-')[0] + '-' + filename.split('-')[1])
