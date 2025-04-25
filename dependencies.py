@@ -141,8 +141,8 @@ for li in deps_section.find_all("li"):
     url = link["href"]
 
     # Handle redirect host
-    if "ftpmirror.gnu.org" in url:
-        url = url.replace("ftpmirror.gnu.org", "ftp.gnu.org")
+    #if "ftpmirror.gnu.org" in url:
+    #    url = url.replace("ftpmirror.gnu.org", "ftp.gnu.org")
 
     filename = os.path.basename(url)
     base = filename.split('-')[0]
