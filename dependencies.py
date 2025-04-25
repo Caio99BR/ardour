@@ -7,6 +7,7 @@ import zipfile
 import shutil
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import json
 
 # Configuration
 BASE_URL = "https://nightly.ardour.org/list.php#build_deps"
@@ -15,31 +16,18 @@ EXTRACT_DIR = "extracted"
 INSTALL_DIR = "/usr/local"  # Change this if you want to install elsewhere
 INSTALL = False  # Set to True to run 'make install'
 MAX_THREADS = 4  # Adjust as needed
-GENERATE_PACKAGE_MAP = True  # Set to True to generate the msys_package_map.txt file
+GENERATE_PACKAGE_MAP = True  # Set to True to generate the msys_package_map.json file
 
-# Load the MSYS2 package map from an external file
+# Load the MSYS2 package map from an external JSON file
 def load_msys2_package_map(file_path):
-    msys2_package_map = {}
     try:
         with open(file_path, 'r') as f:
-            for line in f:
-                # Skip empty lines and comments
-                line = line.strip()
-                if not line or line.startswith('#'):
-                    continue
-                parts = line.split()
-                if len(parts) == 4:  # Now we expect four parts (name, url, msys2_package, special_flag)
-                    package_name, url, msys2_package, special_flag = parts
-                    msys2_package_map[package_name] = {
-                        "url": url,
-                        "msys2_package": msys2_package,
-                        "special": special_flag
-                    }
+            return json.load(f)
     except FileNotFoundError:
         print(f"Warning: {file_path} not found. Proceeding without MSYS2 package map.")
-    return msys2_package_map
+        return {}
 
-# Generate the MSYS2 package map file based on the BASE_URL
+# Generate the MSYS2 package map file in JSON format based on the BASE_URL
 def generate_msys2_package_map(file_path):
     try:
         # Fetch the dependency list page
@@ -52,32 +40,46 @@ def generate_msys2_package_map(file_path):
         if not deps_section:
             raise ValueError("Could not find the list of dependencies.")
 
-        # Open file for writing the package map
-        with open(file_path, 'w') as f:
-            for li in deps_section.find_all("li"):
-                link = li.find("a")
-                if not link or not link.get("href"):
-                    continue
-                url = link["href"]
-                filename = os.path.basename(url)
-                base = filename.split('-')[0]
-                # For now, we assume the MSYS2 package name is the same as the base (to be refined if needed)
-                msys2_package = f"mingw-w64-x86_64-{base}"
-                # Determine if it's from ardour.org (special flag)
-                special_flag = "special" if "ardour.org" in url else "normal"
-                f.write(f"{base} {url} {msys2_package} {special_flag}\n")
+        # Prepare the package map as a dictionary
+        package_map = {}
 
-            print(f"MSYS2 package map successfully generated at {file_path}")
+        for li in deps_section.find_all("li"):
+            link = li.find("a")
+            if not link or not link.get("href"):
+                continue
+            url = link["href"]
+            filename = os.path.basename(url)
+            base = filename.split('-')[0]
+            # For now, we assume the MSYS2 package name is the same as the base (to be refined if needed)
+            msys2_package = f"mingw-w64-x86_64-{base}"
+            # Determine the special flag: 'normal', 'special', or 'none'
+            if "ardour.org" in url:
+                special_flag = "special"
+            else:
+                special_flag = "normal"  # Assume 'normal' for non-ardour.org dependencies
+
+            # Add package to the map
+            package_map[base] = {
+                "url": url,
+                "msys2_package": msys2_package,
+                "special_flag": special_flag
+            }
+
+        # Save the package map as JSON
+        with open(file_path, 'w') as f:
+            json.dump(package_map, f, indent=4)
+
+        print(f"MSYS2 package map successfully generated at {file_path}")
     except Exception as e:
         print(f"Error generating MSYS2 package map: {e}")
 
 # If GENERATE_PACKAGE_MAP is True, generate the mapping and exit
 if GENERATE_PACKAGE_MAP:
-    generate_msys2_package_map('msys_package_map.txt')
+    generate_msys2_package_map('msys_package_map.json')
     exit()  # Exit after generating the map, without further processing
 
 # Load the MSYS2 package map (after generation if necessary)
-MSYS2_PACKAGE_MAP = load_msys2_package_map('msys_package_map.txt')
+MSYS2_PACKAGE_MAP = load_msys2_package_map('msys_package_map.json')
 
 # Ensure directories exist
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
@@ -143,7 +145,16 @@ def download_and_extract(dep):
     except Exception as e:
         print(f"✗ Failed {filename}: {e}")
 
-# If GENERATE_PACKAGE_MAP is False, proceed with downloading and extracting
+# Fetch the dependency list page
+response = requests.get(BASE_URL)
+response.raise_for_status()
+soup = BeautifulSoup(response.text, "html.parser")
+
+# Find the list of dependencies
+deps_section = soup.find("ul", class_="multicolumn")
+if not deps_section:
+    raise ValueError("Could not find the list of dependencies.")
+
 download_list = []
 
 # Process each dependency
@@ -160,12 +171,13 @@ for li in deps_section.find_all("li"):
     
     if package_info:
         msys2_package = package_info["msys2_package"]
-        special_flag = package_info["special"]
+        special_flag = package_info["special_flag"]
         
-        # If the package is marked as "special", notify
-        if special_flag == "special":
-            print(f"Warning: {base} is a special package (requires manual attention).")
-        
+        # Skip the package if the special flag is 'none'
+        if special_flag == "none":
+            print(f"Skipping package {base} (flagged as 'none').")
+            continue  # Skip this package
+
         # Try installing with pacman if MSYS2 package is found and not for Ardour dependencies
         if "ardour.org" not in url:
             if check_msys2_package_installed(msys2_package):
