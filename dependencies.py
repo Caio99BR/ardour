@@ -183,7 +183,7 @@ for li in deps_section.find_all("li"):
         try:
             if filename.endswith((".tar.gz", ".tar.bz2", ".tar.xz", ".tgz")):
                 with tarfile.open(os.path.join(DOWNLOAD_DIR, filename), "r:*") as tar:
-                    tar.extractall(path=extract_path)
+                    tar.extractall(path=extract_path, filter=None)
             elif filename.endswith(".zip"):
                 with zipfile.ZipFile(os.path.join(DOWNLOAD_DIR, filename), "r") as zip_ref:
                     zip_ref.extractall(path=extract_path)
