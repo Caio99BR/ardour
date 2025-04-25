@@ -99,10 +99,30 @@ for li in deps_section.find_all("li"):
     # Optional installation
     if INSTALL:
         print(f"Installing {filename}...")
+
+        # Store the current working directory before making any changes
+        original_dir = os.getcwd()
+
+        # Check if we need to go into the inner directory
+        if filename.endswith((".tar.gz", ".tar.bz2", ".tar.xz", ".tgz", ".zip")):
+            # Check if the extracted folder contains another directory that corresponds to the package name
+            inner_dir = os.path.join(extract_path, filename.split('-')[0] + '-' + filename.split('-')[1])  # Get the name from the filename
+            if os.path.exists(inner_dir):
+                os.chdir(inner_dir)  # Change to the correct directory
+                print(f"Changed directory to {inner_dir}")
+            else:
+                os.chdir(extract_path)  # If no inner folder exists, stay in the extracted path
+                print(f"Changed directory to {extract_path}")
+        else:
+            # Handle case where the folder structure might not be nested
+            os.chdir(extract_path)
+            print(f"Changed directory to {extract_path}")
+
         # This assumes a standard './configure && make && make install' build process
         # You may need to adjust this for specific dependencies
-        os.chdir(extract_path)
         os.system("./configure --prefix=" + INSTALL_DIR)
         os.system("make")
         os.system("make install")
-        os.chdir("../../")  # Return to the original directory
+
+        # Return to the original directory after installation
+        os.chdir(original_dir)
