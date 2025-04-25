@@ -107,6 +107,22 @@ def check_msys2_package_installed(package_name):
         print(f"Error checking package {package_name}: {e}")
         return False
 
+# Function to try installing the package with pacman
+def try_install_msys2_package(package_name):
+    try:
+        print(f"Attempting to install {package_name} using pacman...")
+        result = subprocess.run(["pacman", "-S", "--noconfirm", package_name],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if result.returncode == 0:
+            print(f"Successfully installed {package_name} using pacman.")
+            return True
+        else:
+            print(f"Failed to install {package_name} using pacman.")
+            return False
+    except Exception as e:
+        print(f"Error installing {package_name}: {e}")
+        return False
+
 # Fetch the dependency list page
 response = requests.get(BASE_URL)
 response.raise_for_status()
@@ -132,14 +148,16 @@ for li in deps_section.find_all("li"):
     base = filename.split('-')[0]
 
     msys2_package = MSYS2_PACKAGE_MAP.get(base)
-    if msys2_package:
+    
+    # Try installing with pacman if MSYS2 package is found and not for Ardour dependencies
+    if msys2_package and "ardour.org" not in url:
         if check_msys2_package_installed(msys2_package):
             print(f"{msys2_package} is already installed. Skipping.")
-            continue
+            continue  # Skip downloading source if package is managed by MSYS2
         else:
             print(f"Required package '{msys2_package}' is not installed.")
-            print(f"→ Use: pacman -S {msys2_package}")
-            continue  # Skip downloading source if package is managed by MSYS2
+            if try_install_msys2_package(msys2_package):
+                continue  # Skip download and installation if pacman installation succeeded
 
     # Force download for dependencies coming from http://ardour.org/
     if "ardour.org" in url:
