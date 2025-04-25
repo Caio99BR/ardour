@@ -52,6 +52,9 @@ def generate_msys2_package_map(file_path):
             base = filename.split('-')[0]
             # For now, we assume the MSYS2 package name is the same as the base (to be refined if needed)
             msys2_package = f"mingw-w64-x86_64-{base}"
+            # Extract description
+            description = link.text.strip()
+
             # Determine the special flag: 'normal', 'special', or 'none'
             if "ardour.org" in url:
                 special_flag = "special"
@@ -62,7 +65,8 @@ def generate_msys2_package_map(file_path):
             package_map[base] = {
                 "url": url,
                 "msys2_package": msys2_package,
-                "special_flag": special_flag
+                "special_flag": special_flag,
+                "description": description  # Add description to the JSON
             }
 
         # Save the package map as JSON
@@ -172,6 +176,7 @@ for li in deps_section.find_all("li"):
     if package_info:
         msys2_package = package_info["msys2_package"]
         special_flag = package_info["special_flag"]
+        description = package_info["description"]
         
         # Skip the package if the special flag is 'none'
         if special_flag == "none":
