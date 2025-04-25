@@ -15,84 +15,69 @@ EXTRACT_DIR = "extracted"
 INSTALL_DIR = "/usr/local"  # Change this if you want to install elsewhere
 INSTALL = False  # Set to True to run 'make install'
 MAX_THREADS = 4  # Adjust as needed
+GENERATE_PACKAGE_MAP = True  # Set to True to generate the msys_package_map.txt file
 
-# Mapping dependency base names to MSYS2 package names
-MSYS2_PACKAGE_MAP = {
-    "aubio": "mingw-w64-x86_64-aubio",
-    "autoconf": "mingw-w64-x86_64-autoconf",
-    "automake": "mingw-w64-x86_64-automake",
-    "bison": "mingw-w64-x86_64-bison",
-    "boost": "mingw-w64-x86_64-boost",
-    "cairo": "mingw-w64-x86_64-cairo",
-    "cairomm": "mingw-w64-x86_64-cairomm",
-    "cmake": "mingw-w64-x86_64-cmake",
-    "cppunit": "mingw-w64-x86_64-cppunit",
-    "curl": "mingw-w64-x86_64-curl",
-    "expat": "mingw-w64-x86_64-expat",
-    "fftw": "mingw-w64-x86_64-fftw",
-    "flac": "mingw-w64-x86_64-flac",
-    "flex": "mingw-w64-x86_64-flex",
-    "fontconfig": "mingw-w64-x86_64-fontconfig",
-    "freetype": "mingw-w64-x86_64-freetype",
-    "fribidi": "mingw-w64-x86_64-fribidi",
-    "gettext": "mingw-w64-x86_64-gettext",
-    "glib": "mingw-w64-x86_64-glib2",
-    "glibmm": "mingw-w64-x86_64-glibmm",
-    "gnome-common": "mingw-w64-x86_64-gnome-common",
-    "gnome-doc-utils": "mingw-w64-x86_64-gnome-doc-utils",
-    "gobject-introspection": "mingw-w64-x86_64-gobject-introspection",
-    "harfbuzz": "mingw-w64-x86_64-harfbuzz",
-    "intltool": "mingw-w64-x86_64-intltool",
-    "itstool": "mingw-w64-x86_64-itstool",
-    "jpegsrc": "mingw-w64-x86_64-jpeg",
-    "libarchive": "mingw-w64-x86_64-libarchive",
-    "libffi": "mingw-w64-x86_64-libffi",
-    "libiconv": "mingw-w64-x86_64-libiconv",
-    "liblo": "mingw-w64-x86_64-liblo",
-    "libogg": "mingw-w64-x86_64-libogg",
-    "libpng": "mingw-w64-x86_64-libpng",
-    "libsamplerate": "mingw-w64-x86_64-libsamplerate",
-    "libsigc++": "mingw-w64-x86_64-libsigc++",
-    "libsndfile": "mingw-w64-x86_64-libsndfile",
-    "libtool": "mingw-w64-x86_64-libtool",
-    "libusb": "mingw-w64-x86_64-libusb",
-    "libvorbis": "mingw-w64-x86_64-libvorbis",
-    "libwebsockets": "mingw-w64-x86_64-libwebsockets",
-    "libxml2": "mingw-w64-x86_64-libxml2",
-    "libxslt": "mingw-w64-x86_64-libxslt",
-    "lilv": "mingw-w64-x86_64-lilv",
-    "lv2": "mingw-w64-x86_64-lv2",
-    "libgnurx": "mingw-w64-x86_64-libgnurx",
-    "m4": "mingw-w64-x86_64-m4",
-    "make": "mingw-w64-x86_64-make",
-    "nss": "mingw-w64-x86_64-nss",
-    "nss-pem": "mingw-w64-x86_64-nss-pem",
-    "opus": "mingw-w64-x86_64-opus",
-    "pango": "mingw-w64-x86_64-pango",
-    "pangomm": "mingw-w64-x86_64-pangomm",
-    "pcre": "mingw-w64-x86_64-pcre",
-    "pixman": "mingw-w64-x86_64-pixman",
-    "pkg-config": "mingw-w64-x86_64-pkg-config",
-    "portaudio": "mingw-w64-x86_64-portaudio",
-    "raptor2": "mingw-w64-x86_64-raptor2",
-    "rasqal": "mingw-w64-x86_64-rasqal",
-    "rdflib": "mingw-w64-x86_64-rdflib",
-    "readline": "mingw-w64-x86_64-readline",
-    "redland": "mingw-w64-x86_64-redland",
-    "rubberband": "mingw-w64-x86_64-rubberband",
-    "serd": "mingw-w64-x86_64-serd",
-    "sord": "mingw-w64-x86_64-sord",
-    "sratom": "mingw-w64-x86_64-sratom",
-    "taglib": "mingw-w64-x86_64-taglib",
-    "tar": "mingw-w64-x86_64-tar",
-    "termcap": "mingw-w64-x86_64-termcap",
-    "tiff": "mingw-w64-x86_64-tiff",
-    "util-linux": "mingw-w64-x86_64-util-linux",
-    "uuid": "mingw-w64-x86_64-uuid",
-    "vamp-plugin-sdk": "mingw-w64-x86_64-vamp-plugin-sdk",
-    "xz": "mingw-w64-x86_64-xz",
-    "zlib": "mingw-w64-x86_64-zlib"
-}
+# Load the MSYS2 package map from an external file
+def load_msys2_package_map(file_path):
+    msys2_package_map = {}
+    try:
+        with open(file_path, 'r') as f:
+            for line in f:
+                # Skip empty lines and comments
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                parts = line.split()
+                if len(parts) == 4:  # Now we expect four parts (name, url, msys2_package, special_flag)
+                    package_name, url, msys2_package, special_flag = parts
+                    msys2_package_map[package_name] = {
+                        "url": url,
+                        "msys2_package": msys2_package,
+                        "special": special_flag
+                    }
+    except FileNotFoundError:
+        print(f"Warning: {file_path} not found. Proceeding without MSYS2 package map.")
+    return msys2_package_map
+
+# Generate the MSYS2 package map file based on the BASE_URL
+def generate_msys2_package_map(file_path):
+    try:
+        # Fetch the dependency list page
+        response = requests.get(BASE_URL)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        # Find the list of dependencies
+        deps_section = soup.find("ul", class_="multicolumn")
+        if not deps_section:
+            raise ValueError("Could not find the list of dependencies.")
+
+        # Open file for writing the package map
+        with open(file_path, 'w') as f:
+            for li in deps_section.find_all("li"):
+                link = li.find("a")
+                if not link or not link.get("href"):
+                    continue
+                url = link["href"]
+                filename = os.path.basename(url)
+                base = filename.split('-')[0]
+                # For now, we assume the MSYS2 package name is the same as the base (to be refined if needed)
+                msys2_package = f"mingw-w64-x86_64-{base}"
+                # Determine if it's from ardour.org (special flag)
+                special_flag = "special" if "ardour.org" in url else "normal"
+                f.write(f"{base} {url} {msys2_package} {special_flag}\n")
+
+            print(f"MSYS2 package map successfully generated at {file_path}")
+    except Exception as e:
+        print(f"Error generating MSYS2 package map: {e}")
+
+# If GENERATE_PACKAGE_MAP is True, generate the mapping and exit
+if GENERATE_PACKAGE_MAP:
+    generate_msys2_package_map('msys_package_map.txt')
+    exit()  # Exit after generating the map, without further processing
+
+# Load the MSYS2 package map (after generation if necessary)
+MSYS2_PACKAGE_MAP = load_msys2_package_map('msys_package_map.txt')
 
 # Ensure directories exist
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
@@ -125,7 +110,7 @@ def try_install_msys2_package(package_name):
         print(f"Error installing {package_name}: {e}")
         return False
 
-# Process each dependency
+# Process each dependency (downloading and extracting)
 def download_and_extract(dep):
     url, filename, force_download = dep
     try:
@@ -158,16 +143,7 @@ def download_and_extract(dep):
     except Exception as e:
         print(f"✗ Failed {filename}: {e}")
 
-# Fetch the dependency list page
-response = requests.get(BASE_URL)
-response.raise_for_status()
-soup = BeautifulSoup(response.text, "html.parser")
-
-# Find the list of dependencies
-deps_section = soup.find("ul", class_="multicolumn")
-if not deps_section:
-    raise ValueError("Could not find the list of dependencies.")
-
+# If GENERATE_PACKAGE_MAP is False, proceed with downloading and extracting
 download_list = []
 
 # Process each dependency
@@ -178,16 +154,28 @@ for li in deps_section.find_all("li"):
     url = link["href"]
     filename = os.path.basename(url)
     base = filename.split('-')[0]
-    msys2_package = MSYS2_PACKAGE_MAP.get(base)
-
-    # Try installing with pacman if MSYS2 package is found and not for Ardour dependencies
-    if msys2_package and "ardour.org" not in url:
-        if check_msys2_package_installed(msys2_package):
-            print(f"{msys2_package} is already installed. Skipping.")
-            continue  # Skip downloading source if package is managed by MSYS2
-        elif try_install_msys2_package(msys2_package):
-            print(f"Required package '{msys2_package}' is not installed.")
-            continue  # Skip download if pacman install succeeded
+    
+    # Use MSYS2 package map to fetch information
+    package_info = MSYS2_PACKAGE_MAP.get(base)
+    
+    if package_info:
+        msys2_package = package_info["msys2_package"]
+        special_flag = package_info["special"]
+        
+        # If the package is marked as "special", notify
+        if special_flag == "special":
+            print(f"Warning: {base} is a special package (requires manual attention).")
+        
+        # Try installing with pacman if MSYS2 package is found and not for Ardour dependencies
+        if "ardour.org" not in url:
+            if check_msys2_package_installed(msys2_package):
+                print(f"{msys2_package} is already installed. Skipping.")
+                continue  # Skip downloading source if package is managed by MSYS2
+            elif try_install_msys2_package(msys2_package):
+                print(f"Required package '{msys2_package}' is not installed.")
+                continue  # Skip download if pacman install succeeded
+    else:
+        print(f"No MSYS2 package mapping found for {base}. Proceeding with download.")
 
     # Force download for dependencies coming from http://ardour.org/
     force_download = "ardour.org" in url
