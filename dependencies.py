@@ -54,6 +54,11 @@ for li in deps_section.find_all("li"):
     if not link or not link.get("href"):
         continue
     url = link["href"]
+
+    # Handle redirect host
+    if "ftpmirror.gnu.org" in url:
+        url = url.replace("ftpmirror.gnu.org", "ftp.gnu.org")
+
     filename = os.path.basename(url)
     package_name, required_version = filename.split('-')[:2]  # Assume filename format: <name>-<version>
     required_version = required_version.replace(".tar", "").replace(".gz", "").replace(".bz2", "").replace(".xz", "")
