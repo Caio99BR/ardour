@@ -171,108 +171,92 @@ def get_local_file_hash(file_path):
             hash_sha256.update(chunk)
     return hash_sha256.hexdigest()
 
-# Download and extract dependency if needed
-def download_and_extract(dep, index=None, total=None):
-    global CANCEL_FLAG
+# Main process: download, extract, and optionally install
+total = sum(1 for base in MSYS2_PACKAGE_MAP if MSYS2_PACKAGE_MAP[base]["special_flag"] != "none")
+current = 1
+downloaded_files = []
 
-    url, filename, force_download = dep
-    file_path = os.path.join(DOWNLOAD_DIR, filename)
-    extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
+with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
+    futures = []
 
-    if CANCEL_FLAG:
-        print("Cancellation requested. Stopping download...")
-        return
+    for base, info in MSYS2_PACKAGE_MAP.items():
+        url = info.get("url")
+        if not url:
+            print(f"No URL found for package {base}. Skipping.")
+            continue
 
-    try:
-        remote_hash = get_remote_file_hash(url)
-        local_hash = get_local_file_hash(file_path)
-
-        if (
-            os.path.exists(file_path)
-            and os.path.exists(extract_path)
-            and remote_hash
-            and local_hash
-            and remote_hash == local_hash
-        ):
-            print(f"✓ [{index}/{total}] {filename} already downloaded and extracted (hash match). Skipping.")
-            return
-
-        if force_download or not os.path.exists(file_path) or remote_hash != local_hash:
-            print(f"[{index}/{total}] Downloading {filename}...")
-            with requests.get(url, stream=True, timeout=30) as r:
-                r.raise_for_status()
-                with open(file_path, "wb") as f:
-                    total_size = int(r.headers.get('content-length', 0))
-                    downloaded = 0
-                    for chunk in r.iter_content(chunk_size=1024):
-                        if chunk:
-                            f.write(chunk)
-                            downloaded += len(chunk)
-                            print(f"\rDownloading {filename}: {downloaded/total_size*100:.2f}% complete", end="")
-            print(f"\n✓ Downloaded {filename} ({total_size/1024/1024:.2f} MB)")
-
-        if not os.path.exists(extract_path):
-            print(f"[{index}/{total}] Extracting {filename}...")
-            if filename.endswith((".tar.gz", ".tar.bz2", ".tar.xz", ".tgz")):
-                with tarfile.open(file_path, "r:*") as tar:
-                    tar.extractall(path=extract_path)
-            elif filename.endswith(".zip"):
-                with zipfile.ZipFile(file_path, "r") as zip_ref:
-                    zip_ref.extractall(path=extract_path)
-            else:
-                print(f"Unknown file format: {filename}")
-        else:
-            print(f"{filename} already extracted. Skipping extraction.")
-    except Exception as e:
-        print(f"✗ [{index}/{total}] Failed {filename}: {e}")
-
-# Scrape list of dependencies from Ardour website
-response = requests.get(BASE_URL)
-response.raise_for_status()
-soup = BeautifulSoup(response.text, "html.parser")
-deps_section = soup.find("ul", class_="multicolumn")
-if not deps_section:
-    raise ValueError("Could not find the list of dependencies.")
-
-download_list = []
-
-# Prepare list of packages to download
-for li in deps_section.find_all("li"):
-    link = li.find("a")
-    if not link or not link.get("href"):
-        continue
-    url = link["href"]
-    filename = os.path.basename(url)
-    base = filename.split('-')[0]
-
-    package_info = MSYS2_PACKAGE_MAP.get(base)
-
-    if package_info:
-        msys2_package = package_info["msys2_package"]
-        special_flag = package_info["special_flag"]
-        description = package_info["description"]
+        filename = os.path.basename(url)
+        msys2_package = info["msys2_package"]
+        special_flag = info["special_flag"]
 
         if special_flag == "none":
             print(f"Skipping package {base} (flagged as 'none').")
             continue
 
-        if "ardour.org" not in url:
+        if special_flag != "special":
             if check_msys2_package_installed(msys2_package):
                 print(f"{msys2_package} is already installed. Skipping.")
                 continue
             elif try_install_msys2_package(msys2_package):
                 print(f"Required package '{msys2_package}' installed successfully.")
                 continue
-    else:
-        print(f"No MSYS2 package mapping found for {base}. Proceeding with download.")
 
-    force_download = "ardour.org" in url
-    download_list.append((url, filename, force_download))
+        extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
+        file_path = os.path.join(DOWNLOAD_DIR, filename)
 
-# Start threaded downloads and extraction
-with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
-    total = len(download_list)
-    futures = {executor.submit(download_and_extract, dep, i, total): i for i, dep in enumerate(download_list, 1)}
+        def task():
+            nonlocal current
+            if CANCEL_FLAG:
+                print("Cancellation requested. Stopping download...")
+                return
+
+            try:
+                remote_hash = get_remote_file_hash(url)
+                local_hash = get_local_file_hash(file_path)
+
+                if (
+                    os.path.exists(file_path)
+                    and os.path.exists(extract_path)
+                    and remote_hash
+                    and local_hash
+                    and remote_hash == local_hash
+                ):
+                    print(f"✓ [{current}/{total}] {filename} already downloaded and extracted (hash match). Skipping.")
+                    return
+
+                if not os.path.exists(file_path) or remote_hash != local_hash:
+                    print(f"[{current}/{total}] Downloading {filename}...")
+                    with requests.get(url, stream=True, timeout=30) as r:
+                        r.raise_for_status()
+                        with open(file_path, "wb") as f:
+                            total_size = int(r.headers.get('content-length', 0))
+                            downloaded = 0
+                            for chunk in r.iter_content(chunk_size=1024):
+                                if chunk:
+                                    f.write(chunk)
+                                    downloaded += len(chunk)
+                                    print(f"\rDownloading {filename}: {downloaded/total_size*100:.2f}% complete", end="")
+                    print(f"\n✓ Downloaded {filename} ({total_size/1024/1024:.2f} MB)")
+
+                if not os.path.exists(extract_path):
+                    print(f"[{current}/{total}] Extracting {filename}...")
+                    if filename.endswith((".tar.gz", ".tar.bz2", ".tar.xz", ".tgz")):
+                        with tarfile.open(file_path, "r:*") as tar:
+                            tar.extractall(path=extract_path)
+                    elif filename.endswith(".zip"):
+                        with zipfile.ZipFile(file_path, "r") as zip_ref:
+                            zip_ref.extractall(path=extract_path)
+                    else:
+                        print(f"Unknown file format: {filename}")
+                else:
+                    print(f"{filename} already extracted. Skipping extraction.")
+            except Exception as e:
+                print(f"✗ [{current}/{total}] Failed {filename}: {e}")
+
+        futures.append(executor.submit(task))
+        downloaded_files.append(filename)
+        current += 1
+
     try:
         for future in as_completed(futures):
             future.result()
@@ -280,9 +264,8 @@ with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
         print("Process interrupted. Cancelling...")
         cancel_execution()
 
-# Optionally build and install from source
 if INSTALL:
-    for _, filename in download_list:
+    for filename in downloaded_files:
         extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
         print(f"Installing {filename}...")
         original_dir = os.getcwd()
