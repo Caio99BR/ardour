@@ -78,6 +78,8 @@ pacman -S mingw-w64-ucrt-x86_64-liblo \
     mingw-w64-ucrt-x86_64-serd \
     mingw-w64-ucrt-x86_64-sord \
     mingw-w64-ucrt-x86_64-sratom \
+    mingw-w64-ucrt-x86_64-gtk3 \
+    mingw-w64-ucrt-x86_64-jack2 \
     mingw-w64-ucrt-x86_64-lilv
 
 git clone https://github.com/Caio99BR/ardour
@@ -91,3 +93,6 @@ git clone https://github.com/Caio99BR/ardour
 
 
 git tag -a 7.9 -m "Ardour - Kill me Baby!"
+
+python3.exe waf configure --dist-target=mingw --prefix=/ucrt64 --configdir=/share --check-cxx-compiler=g++ --check-c-compiler=gcc --no-phone-home --optimize --ptformat --with-backends=jack,portaudio,dummy
+python3.exe waf build
