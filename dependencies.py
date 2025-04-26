@@ -293,7 +293,7 @@ for li in deps_section.find_all("li"):
                 print(f"{msys2_package} is already installed. Skipping.")
                 continue  # Skip downloading source if package is managed by MSYS2
             elif try_install_msys2_package(msys2_package):
-                print(f"Required package '{msys2_package}' is not installed.")
+                print(f"Required package '{msys2_package}' installed successfully.")
                 continue  # Skip download if pacman install succeeded
     else:
         print(f"No MSYS2 package mapping found for {base}. Proceeding with download.")
@@ -301,17 +301,7 @@ for li in deps_section.find_all("li"):
     # Force download for dependencies coming from http://ardour.org/
     force_download = "ardour.org" in url
 
-    # Skip download if file already exists unless we are forcing the download
-    file_path = os.path.join(DOWNLOAD_DIR, filename)
-    if os.path.exists(file_path) and not force_download:
-        print(f"{filename} already exists. Skipping download.")
-        extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
-        if not os.path.exists(extract_path):
-            download_list.append((url, filename, force_download))  # still needs extraction
-        else:
-            print(f"{filename} already extracted. Skipping.")
-        continue
-
+    # Always include in download list — download_and_extract will decide what to do
     download_list.append((url, filename, force_download))
 
 # Download and extract concurrently
