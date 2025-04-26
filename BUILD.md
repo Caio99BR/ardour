@@ -1,6 +1,51 @@
-python3 -m pip install requests beautifulsoup4
 
+´´´bash
+pacman -S python3 git python3-pip # MINGW
 
-pacman -S git
+pacman -S mingw-w64-x86_64-python mingw-w64-x86_64-python-requests mingw-w64-x86_64-python-beautifulsoup4 # MINGW
 
+pacman -S mingw-w64-x86_64-toolchain --noconfirm
+pacman -S autoconf automake bison bisonc++ cmake expat gettext glib2 itstool libarchive libffi make m4 readline tar zlib libutil-linux-devel
+pacman -S \
+    mingw-w64-x86_64-binutils \
+    mingw-w64-x86_64-boost \
+    mingw-w64-x86_64-boost-libs \
+    mingw-w64-x86_64-cairo \
+    mingw-w64-x86_64-cairomm \
+    mingw-w64-x86_64-cmake \
+    mingw-w64-x86_64-cppunit \
+    mingw-w64-x86_64-curl \
+    mingw-w64-x86_64-expat \
+    mingw-w64-x86_64-fftw \
+    mingw-w64-x86_64-flac \
+    mingw-w64-x86_64-fontconfig \
+    mingw-w64-x86_64-freetype \
+    mingw-w64-x86_64-fribidi \
+    mingw-w64-x86_64-gettext-libtextstyle \
+    mingw-w64-x86_64-gettext-runtime \
+    mingw-w64-x86_64-gettext-tools \
+    mingw-w64-x86_64-glib2 \
+    mingw-w64-x86_64-glibmm \
+    mingw-w64-x86_64-gnome-common \
+    mingw-w64-x86_64-gobject-introspection \
+    mingw-w64-x86_64-harfbuzz \
+    mingw-w64-x86_64-itstool \
+    mingw-w64-x86_64-libarchive \
+    mingw-w64-x86_64-libffi \
+    mingw-w64-x86_64-libgnurx \
+    mingw-w64-x86_64-libtiff \
+    mingw-w64-x86_64-make \
+    mingw-w64-x86_64-pkg-config \
+    mingw-w64-x86_64-readline \
+    mingw-w64-x86_64-vamp-plugin-sdk \
+    mingw-w64-x86_64-xz \
+    mingw-w64-x86_64-zlib
+
+ 
 git clone https://github.com/Caio99BR/ardour
+
+cp ardour/dependencies.py dependencies.py
+
+python3.exe dependencies.py
+
+´´´
