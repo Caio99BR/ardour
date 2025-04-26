@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 import json
 import hashlib
 import threading
+import re
 
 # Configuration
 BASE_URL = "https://nightly.ardour.org/list.php#build_deps"
@@ -195,6 +196,9 @@ def task(base, info):
                 print(f"[{current_value}/{total}] {msys2_package} Extracting {filename}...")
                 if filename.endswith((".tar.gz", ".tar.bz2", ".tar.xz", ".tgz")):
                     with tarfile.open(file_path, "r:*") as tar:
+                        for member in tar.getmembers():
+                            sanitized_name = re.sub(r'[:]', '_', member.name)
+                            member.name = sanitized_name
                         tar.extractall(path=extract_path)
                 elif filename.endswith(".zip"):
                     with zipfile.ZipFile(file_path, "r") as zip_ref:
