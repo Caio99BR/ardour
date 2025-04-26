@@ -8,37 +8,37 @@
     "autoconf": {
         "url": "http://ftpmirror.gnu.org/autoconf/autoconf-2.69.tar.xz",
         "msys2_package": "mingw-w64-x86_64-autoconf",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "autoconf 2.69"
     },
     "automake": {
         "url": "http://ftpmirror.gnu.org/automake/automake-1.14.1.tar.gz",
         "msys2_package": "mingw-w64-x86_64-automake",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "automake 1.14.1"
     },
     "bison": {
         "url": "http://ftpmirror.gnu.org/bison/bison-3.0.tar.xz",
         "msys2_package": "mingw-w64-x86_64-bison",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "bison 3.0"
     },
     "boost_1_68_0.tar.bz2": {
-        "url": "https://archives.boost.io/release/1.68.0/source/boost_1_68_0.tar.gz",
+        "url": "http://sourceforge.net/projects/boost/files/boost/1.68.0/boost_1_68_0.tar.bz2",
         "msys2_package": "mingw-w64-x86_64-boost_1_68_0.tar.bz2",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "boost 1.68.0"
     },
     "cairo": {
         "url": "http://cairographics.org/releases/cairo-1.16.0.tar.xz",
         "msys2_package": "mingw-w64-x86_64-cairo",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "cairo 1.16.0"
     },
     "cairomm": {
         "url": "http://cairographics.org/releases/cairomm-1.12.2.tar.gz",
         "msys2_package": "mingw-w64-x86_64-cairomm",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "cairomm 1.12.2"
     },
     "cmake": {
@@ -50,31 +50,31 @@
     "cppunit": {
         "url": "http://dev-www.libreoffice.org/src/cppunit-1.13.2.tar.gz",
         "msys2_package": "mingw-w64-x86_64-cppunit",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "cppunit 1.13.2"
     },
     "curl": {
         "url": "https://curl.haxx.se/download/curl-7.66.0.tar.xz",
         "msys2_package": "mingw-w64-x86_64-curl",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "curl 7.66.0"
     },
     "expat": {
         "url": "https://downloads.sourceforge.net/project/expat/expat/2.6.3/expat-2.6.3.tar.xz",
         "msys2_package": "mingw-w64-x86_64-expat",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "expat 2.6.3"
     },
     "fftw": {
         "url": "http://fftw.org/fftw-3.3.8.tar.gz",
         "msys2_package": "mingw-w64-x86_64-fftw",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "fftw 3.3.8"
     },
     "flac": {
         "url": "http://downloads.xiph.org/releases/flac/flac-1.3.2.tar.xz",
         "msys2_package": "mingw-w64-x86_64-flac",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "flac 1.3.2"
     },
     "flex": {
@@ -86,67 +86,67 @@
     "fontconfig": {
         "url": "http://www.freedesktop.org/software/fontconfig/release/fontconfig-2.13.1.tar.bz2",
         "msys2_package": "mingw-w64-x86_64-fontconfig",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "fontconfig 2.13.1"
     },
     "freetype": {
         "url": "http://downloads.sourceforge.net/project/freetype/freetype2/2.9/freetype-2.9.tar.bz2",
         "msys2_package": "mingw-w64-x86_64-freetype",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "freetype 2.9"
     },
     "fribidi": {
         "url": "https://github.com/fribidi/fribidi/releases/download/v1.0.9/fribidi-1.0.9.tar.xz",
         "msys2_package": "mingw-w64-x86_64-fribidi",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "fribidi 1.0.9"
     },
     "gettext": {
         "url": "http://ftpmirror.gnu.org/gettext/gettext-0.21.tar.gz",
         "msys2_package": "mingw-w64-x86_64-gettext",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "gettext 0.21"
     },
     "glib": {
         "url": "https://download.gnome.org/sources/glib/2.56/glib-2.56.4.tar.xz",
         "msys2_package": "mingw-w64-x86_64-glib",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "glib 2.56.4"
     },
     "glibmm": {
         "url": "https://download.gnome.org/sources/glibmm/2.56/glibmm-2.56.1.tar.xz",
         "msys2_package": "mingw-w64-x86_64-glibmm",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "glibmm 2.56.1"
     },
     "gnome": {
-        "url": "https://download.gnome.org/sources/gnome-doc-utils/0.20/gnome-doc-utils-0.20.10.tar.xz",
+        "url": "http://ftp.acc.umu.se/pub/gnome/sources/gnome-doc-utils/0.20/gnome-doc-utils-0.20.10.tar.xz",
         "msys2_package": "mingw-w64-x86_64-gnome",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "gnome-doc-utils 0.20.10"
     },
     "gobject": {
         "url": "http://ftp.gnome.org/pub/GNOME/sources/gobject-introspection/1.38/gobject-introspection-1.38.0.tar.xz",
         "msys2_package": "mingw-w64-x86_64-gobject",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "gobject-introspection 1.38.0"
     },
     "harfbuzz": {
         "url": "https://www.freedesktop.org/software/harfbuzz/release/harfbuzz-2.6.7.tar.xz",
         "msys2_package": "mingw-w64-x86_64-harfbuzz",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "harfbuzz 2.6.7"
     },
     "intltool": {
         "url": "http://launchpad.net/intltool/trunk/0.50.2/+download/intltool-0.50.2.tar.gz",
         "msys2_package": "mingw-w64-x86_64-intltool",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "intltool 0.50.2"
     },
     "itstool": {
         "url": "http://files.itstool.org/itstool/itstool-2.0.7.tar.bz2",
         "msys2_package": "mingw-w64-x86_64-itstool",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "itstool 2.0.7"
     },
     "jpegsrc.v9a.tar.gz": {
@@ -158,13 +158,13 @@
     "libarchive": {
         "url": "http://www.libarchive.org/downloads/libarchive-3.6.1.tar.gz",
         "msys2_package": "mingw-w64-x86_64-libarchive",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "libarchive 3.6.1"
     },
     "libffi": {
         "url": "https://github.com/libffi/libffi/releases/download/v3.4.2/libffi-3.4.2.tar.gz",
         "msys2_package": "mingw-w64-x86_64-libffi",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "libffi 3.4.2"
     },
     "libiconv": {
@@ -252,7 +252,7 @@
         "description": "lilv 0.24.13"
     },
     "0.5.1": {
-        "url": "https://github.com/x42/LRDF/archive/refs/tags/0.5.1-rg.tar.gz",
+        "url": "https://github.com/x42/LRDF/archive/0.5.1-rg.tar.gz",
         "msys2_package": "mingw-w64-x86_64-0.5.1",
         "special_flag": "normal",
         "description": "LRDF 0.5.1-rg"
@@ -263,16 +263,16 @@
         "special_flag": "special",
         "description": "lv2 1.18.2"
     },
-    "mingw-w64-libgnurx": {
+    "mingw": {
         "url": "http://sourceforge.net/projects/mingw/files/Other/UserContributed/regex/mingw-regex-2.5.1/mingw-libgnurx-2.5.1-src.tar.gz",
-        "msys2_package": "mingw-w64-x86_64-libgnurx",
+        "msys2_package": "mingw-w64-x86_64-mingw",
         "special_flag": "none",
         "description": "libgnurx 2.5.1 (Windows)"
     },
     "m4": {
         "url": "http://ftpmirror.gnu.org/m4/m4-1.4.18.tar.bz2",
         "msys2_package": "mingw-w64-x86_64-m4",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "m4 1.4.18"
     },
     "make": {
@@ -320,7 +320,7 @@
     "pkg": {
         "url": "http://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz",
         "msys2_package": "mingw-w64-x86_64-pkg",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "pkg-config 0.29.2"
     },
     "portaudio": {
@@ -330,7 +330,7 @@
         "description": "portaudio svn rev1963 (Windows)"
     },
     "raptor2": {
-        "url": "http://download.librdf.org/source/raptor2-2.0.14.tar.gz",
+        "url": "http://download.librdf.org/source/raptor2-2.0.16.tar.gz",
         "msys2_package": "mingw-w64-x86_64-raptor2",
         "special_flag": "normal",
         "description": "raptor2 2.0.14"
@@ -342,7 +342,7 @@
         "description": "rasqal 0.9.32"
     },
     "4.1.2.tar.gz": {
-        "url": "https://github.com/RDFLib/rdflib/archive/refs/tags/4.1.2.tar.gz",
+        "url": "https://github.com/RDFLib/rdflib/archive/4.1.2.tar.gz",
         "msys2_package": "mingw-w64-x86_64-4.1.2.tar.gz",
         "special_flag": "normal",
         "description": "rdflib 4.1.2"
@@ -350,7 +350,7 @@
     "readline": {
         "url": "http://ftpmirror.gnu.org/readline/readline-8.1.tar.gz",
         "msys2_package": "mingw-w64-x86_64-readline",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "readline 8.1"
     },
     "redland": {
@@ -392,7 +392,7 @@
     "tar": {
         "url": "http://ftpmirror.gnu.org/tar/tar-1.27.tar.bz2",
         "msys2_package": "mingw-w64-x86_64-tar",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "tar 1.27"
     },
     "termcap": {
@@ -404,13 +404,13 @@
     "tiff": {
         "url": "http://download.osgeo.org/libtiff/old/tiff-4.0.3.tar.gz",
         "msys2_package": "mingw-w64-x86_64-tiff",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "tiff 4.0.3"
     },
     "util": {
         "url": "http://www.kernel.org/pub/linux/utils/util-linux/v2.38/util-linux-2.38.1.tar.xz",
         "msys2_package": "mingw-w64-x86_64-util",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "util-linux 2.38.1"
     },
     "uuid": {
@@ -420,15 +420,15 @@
         "description": "uuid 1.6.2 (macOS)"
     },
     "vamp": {
-        "url": "https://src.rrz.uni-hamburg.de/object/438294ad8e9cb6c3af89c995478247a6-417482-1580711902/vamp-plugin-sdk-2.9.0.zip",
+        "url": "https://code.soundsoftware.ac.uk/attachments/download/2588/vamp-plugin-sdk-2.9.0.tar.gz",
         "msys2_package": "mingw-w64-x86_64-vamp",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "vamp-plugin-sdk 2.9.0"
     },
     "xz": {
         "url": "http://tukaani.org/xz/xz-5.2.2.tar.bz2",
         "msys2_package": "mingw-w64-x86_64-xz",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "xz 5.2.2"
     },
     "zlib": {
