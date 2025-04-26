@@ -227,7 +227,7 @@ with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
                         and local_hash
                         and remote_hash == local_hash
                     ):
-                        print(f"✓ [{current_value}/{total}] {filename} already downloaded and extracted (hash match). Skipping.")
+                        print(f"[{current_value}/{total}] {filename} already downloaded and extracted (hash match). Skipping.")
                         return
 
                     if not os.path.exists(file_path) or remote_hash != local_hash:
@@ -241,8 +241,8 @@ with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
                                     if chunk:
                                         f.write(chunk)
                                         downloaded += len(chunk)
-                                        print(f"\rDownloading {filename}: {downloaded/total_size*100:.2f}% complete", end="")
-                        print(f"\n✓ Downloaded {filename} ({total_size/1024/1024:.2f} MB)")
+                                        print(f"\r[{current_value}/{total}] Downloading {filename}: {downloaded/total_size*100:.2f}% complete", end="")
+                        print(f"\n[{current_value}/{total}] Downloaded {filename} ({total_size/1024/1024:.2f} MB)")
 
                     if not os.path.exists(extract_path):
                         print(f"[{current_value}/{total}] Extracting {filename}...")
@@ -253,11 +253,11 @@ with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
                             with zipfile.ZipFile(file_path, "r") as zip_ref:
                                 zip_ref.extractall(path=extract_path)
                         else:
-                            print(f"Unknown file format: {filename}")
+                            print(f"[{current_value}/{total}] Unknown file format: {filename}")
                     else:
-                        print(f"{filename} already extracted. Skipping extraction.")
+                        print(f"[{current_value}/{total}] {filename} already extracted. Skipping extraction.")
                 except Exception as e:
-                    print(f"✗ [{current_value}/{total}] Failed {filename}: {e}")
+                    print(f"[{current_value}/{total}] Failed {filename}: {e}")
 
             futures.append(executor.submit(task))
             downloaded_files.append(filename)
