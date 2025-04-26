@@ -5,7 +5,8 @@ pacman -S mingw-w64-x86_64-python mingw-w64-x86_64-python-requests mingw-w64-x86
 pacman -S mingw-w64-x86_64-toolchain --noconfirm
 
 pacman -S autoconf automake bison bisonc++ cmake gettext m4 tar libutil-linux-devel perl-XML-Parser intltool libtool gtk-doc flex libyajl
-
+export PATH="/ucrt64/bin:$PATH"
+export PKG_CONFIG_PATH="/ucrt64/lib/pkgconfig:/ucrt64/share/pkgconfig"
 pacman -S mingw-w64-ucrt-x86_64-raptor \
              mingw-w64-ucrt-x86_64-rasqal \
              mingw-w64-ucrt-x86_64-redland \
