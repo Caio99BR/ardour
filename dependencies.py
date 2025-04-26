@@ -237,12 +237,14 @@ if INSTALL:
         os.chdir(build_dir)
         try:
             if build_dir == "extracted/0.5.1-rg.tar/LRDF-0.5.1-rg":
-                # Aplica o patch antes de configurar
                 patch_path = os.path.join(original_dir, "fix-stdint.patch")
                 if os.path.exists(patch_path):
                     print("Applying fix-stdint.patch...")
-                    if os.system(f"patch -p1 < \"{patch_path}\"") != 0:
-                        raise RuntimeError("Error applying fix-stdint.patch")
+                    result = os.system(f"patch -p1 < \"{patch_path}\"")
+                    if result != 0:
+                        print("Warning: Failed to apply fix-stdint.patch (continuing anyway)")
+                else:
+                    print("Warning: fix-stdint.patch not found (continuing without patch)")
 
                 if os.system("bash ./autogen.sh --prefix=" + INSTALL_DIR) != 0:
                     raise RuntimeError("Error during ./autogen.sh")
@@ -263,3 +265,4 @@ if INSTALL:
             sys.exit(1)
         finally:
             os.chdir(original_dir)
+
