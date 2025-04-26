@@ -44,6 +44,7 @@ def check_site_for_changes():
     response = requests.get(BASE_URL)
     response.raise_for_status()
     current_hash = hashlib.sha256(response.text.encode('utf-8')).hexdigest()
+    saved_hash = load_msys2_package_map(PACKAGE_MAP_FILE).get('site_hash')
     if saved_hash != current_hash:
         if GENERATE_PACKAGE_MAP:
             save_site_hash_to_json(current_hash, PACKAGE_MAP_FILE)
