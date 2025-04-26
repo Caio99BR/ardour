@@ -24,7 +24,7 @@
         "description": "bison 3.0"
     },
     "boost_1_68_0.tar.bz2": {
-        "url": "http://sourceforge.net/projects/boost/files/boost/1.68.0/boost_1_68_0.tar.bz2",
+        "url": "https://archives.boost.io/release/1.68.0/source/boost_1_68_0.tar.gz",
         "msys2_package": "mingw-w64-x86_64-boost_1_68_0.tar.bz2",
         "special_flag": "normal",
         "description": "boost 1.68.0"
@@ -263,10 +263,10 @@
         "special_flag": "special",
         "description": "lv2 1.18.2"
     },
-    "mingw": {
+    "mingw-w64-libgnurx": {
         "url": "http://sourceforge.net/projects/mingw/files/Other/UserContributed/regex/mingw-regex-2.5.1/mingw-libgnurx-2.5.1-src.tar.gz",
-        "msys2_package": "mingw-w64-x86_64-mingw",
-        "special_flag": "normal",
+        "msys2_package": "mingw-w64-x86_64-libgnurx",
+        "special_flag": "none",
         "description": "libgnurx 2.5.1 (Windows)"
     },
     "m4": {
