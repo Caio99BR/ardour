@@ -174,12 +174,16 @@ def task(base, info):
                     with open(file_path, "wb") as f:
                         total_size = int(r.headers.get('content-length', 0))
                         downloaded = 0
+                        if total_size == 0:  # Handle unknown file sizes
+                            print(f"[{current_value}/{total}] {msys2_package} Downloading {filename}: Unknown size, downloading...")
                         for chunk in r.iter_content(chunk_size=1024):
                             if chunk:
                                 f.write(chunk)
                                 downloaded += len(chunk)
-                                print(f"\r[{current_value}/{total}] {msys2_package} Downloading {filename}: {downloaded/total_size*100:.2f}% complete", end="")
-                print(f"\n[{current_value}/{total}] {msys2_package} Downloaded {filename} ({total_size/1024/1024:.2f} MB)")
+                                # Avoid division by zero by checking if total_size > 0
+                                if total_size > 0:
+                                    print(f"\r[{current_value}/{total}] {msys2_package} Downloading {filename}: {downloaded / total_size * 100:.2f}% complete", end="")
+                        print(f"\n[{current_value}/{total}] {msys2_package} Downloaded {filename} ({total_size / 1024 / 1024:.2f} MB)")
         except Exception as e:
             print(f"[{current_value}/{total}] {msys2_package} Failed {filename}: {e}")
             return
