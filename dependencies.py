@@ -145,22 +145,22 @@ def task(base, info):
     if special_flag == "none" or special_flag == "special":
         if PRINT_SKIP:
             print(f"[{current_value}/{total}] {msys2_package} flagged as '{special_flag}', skipping...")
-        return
-
-    # Check if the package is already installed or install it if not
-    result = subprocess.run(["pacman", "-Q", msys2_package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if result.returncode == 0:
-        if PRINT_SKIP:
-            print(f"[{current_value}/{total}] {msys2_package} is already installed. Skipping.")
-        installed = 1
+        if special_flag == "none":
+            return
     else:
-        result = subprocess.run(["pacman", "-S", "--noconfirm", msys2_package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # Check if the package is already installed or install it if not
+        result = subprocess.run(["pacman", "-Q", msys2_package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if result.returncode == 0:
-            if PRINT_SKIP:
-                print(f"[{current_value}/{total}] {msys2_package} successfully installed using pacman.")
             installed = 1
+        else:
+            result = subprocess.run(["pacman", "-S", "--noconfirm", msys2_package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if result.returncode == 0:
+                installed = 1
 
-    if installed == 0:
+    if installed == 1:
+        if PRINT_SKIP:
+                print(f"[{current_value}/{total}] {msys2_package} is already installed. Skipping.")
+    else:
         try:
             # Check if the file already exists
             file_path = os.path.join(DOWNLOAD_DIR, filename)
@@ -246,7 +246,7 @@ if INSTALL:
 
                 if os.system(f"bash ./autogen.sh") != 0:
                     raise RuntimeError("Error during ./autogen.sh")
-                    
+
                 if os.system("sed -i.bak -e 's/\\(allow_undefined=\\)yes/\\1no/' libtool") != 0:
                     print("Warning: Failed to apply patch: allow_undefined for libtol (continuing anyway)")
             else:
@@ -266,4 +266,3 @@ if INSTALL:
             sys.exit(1)
         finally:
             os.chdir(original_dir)
-
