@@ -16,6 +16,7 @@ pacman -S \
     libtool \
     gtk-doc \
     yelp-tools \
+    patch \
     flex
 
 pacman -S --noconfirm \
