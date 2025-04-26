@@ -9,6 +9,7 @@ import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import hashlib
+import threading
 
 # Configuration
 BASE_URL = "https://nightly.ardour.org/list.php#build_deps"
@@ -173,7 +174,8 @@ def get_local_file_hash(file_path):
 
 # Main process: download, extract, and optionally install
 total = sum(1 for base in MSYS2_PACKAGE_MAP if MSYS2_PACKAGE_MAP[base]["special_flag"] != "none")
-current = 1
+current_lock = threading.Lock()
+current = [1]  # Using a list to allow mutation across threads
 downloaded_files = []
 
 with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
@@ -205,7 +207,10 @@ with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
         file_path = os.path.join(DOWNLOAD_DIR, filename)
 
         def task():
-            nonlocal current
+            with current_lock:
+                current_value = current[0]
+                current[0] += 1
+
             if CANCEL_FLAG:
                 print("Cancellation requested. Stopping download...")
                 return
@@ -221,11 +226,11 @@ with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
                     and local_hash
                     and remote_hash == local_hash
                 ):
-                    print(f"✓ [{current}/{total}] {filename} already downloaded and extracted (hash match). Skipping.")
+                    print(f"✓ [{current_value}/{total}] {filename} already downloaded and extracted (hash match). Skipping.")
                     return
 
                 if not os.path.exists(file_path) or remote_hash != local_hash:
-                    print(f"[{current}/{total}] Downloading {filename}...")
+                    print(f"[{current_value}/{total}] Downloading {filename}...")
                     with requests.get(url, stream=True, timeout=30) as r:
                         r.raise_for_status()
                         with open(file_path, "wb") as f:
@@ -239,7 +244,7 @@ with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
                     print(f"\n✓ Downloaded {filename} ({total_size/1024/1024:.2f} MB)")
 
                 if not os.path.exists(extract_path):
-                    print(f"[{current}/{total}] Extracting {filename}...")
+                    print(f"[{current_value}/{total}] Extracting {filename}...")
                     if filename.endswith((".tar.gz", ".tar.bz2", ".tar.xz", ".tgz")):
                         with tarfile.open(file_path, "r:*") as tar:
                             tar.extractall(path=extract_path)
@@ -251,11 +256,10 @@ with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
                 else:
                     print(f"{filename} already extracted. Skipping extraction.")
             except Exception as e:
-                print(f"✗ [{current}/{total}] Failed {filename}: {e}")
+                print(f"✗ [{current_value}/{total}] Failed {filename}: {e}")
 
         futures.append(executor.submit(task))
         downloaded_files.append(filename)
-        current += 1
 
     try:
         for future in as_completed(futures):
