@@ -236,13 +236,24 @@ if INSTALL:
         print(f"Installing from {build_dir}...")
         os.chdir(build_dir)
         try:
-            if os.system("bash ./configure --prefix=" + INSTALL_DIR) != 0:
-                raise RuntimeError("Error during ./configure")
+            if build_dir == "extracted/0.5.1-rg.tar/LRDF-0.5.1-rg":
+                # Aplica o patch antes de configurar
+                patch_path = os.path.join(original_dir, "fix-stdint.patch")
+                if os.path.exists(patch_path):
+                    print("Applying fix-stdint.patch...")
+                    if os.system(f"patch -p1 < \"{patch_path}\"") != 0:
+                        raise RuntimeError("Error applying fix-stdint.patch")
 
-            if os.system("bash make") != 0:
+                if os.system("bash ./autogen.sh --prefix=" + INSTALL_DIR) != 0:
+                    raise RuntimeError("Error during ./autogen.sh")
+            else:
+                if os.system("bash ./configure --prefix=" + INSTALL_DIR) != 0:
+                    raise RuntimeError("Error during ./configure")
+
+            if os.system(f"make -j{MAX_THREADS}") != 0:
                 raise RuntimeError("Error during make")
 
-            if os.system("bash make install") != 0:
+            if os.system("make install") != 0:
                 raise RuntimeError("Error during make install")
 
         except subprocess.CalledProcessError as e:
