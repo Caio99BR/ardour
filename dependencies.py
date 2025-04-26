@@ -173,7 +173,7 @@ def get_local_file_hash(file_path):
     return hash_sha256.hexdigest()
 
 # Main process: download, extract, and optionally install
-total = sum(1 for base in MSYS2_PACKAGE_MAP if MSYS2_PACKAGE_MAP[base]["special_flag"] != "none")
+total = sum(1 for base in MSYS2_PACKAGE_MAP if isinstance(MSYS2_PACKAGE_MAP[base], dict) and MSYS2_PACKAGE_MAP[base].get("special_flag") != "none")
 current_lock = threading.Lock()
 current = [1]  # Using a list to allow mutation across threads
 downloaded_files = []
@@ -182,84 +182,85 @@ with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
     futures = []
 
     for base, info in MSYS2_PACKAGE_MAP.items():
-        url = info.get("url")
-        if not url:
-            print(f"No URL found for package {base}. Skipping.")
-            continue
-
-        filename = os.path.basename(url)
-        msys2_package = info["msys2_package"]
-        special_flag = info["special_flag"]
-
-        if special_flag == "none":
-            print(f"Skipping package {base} (flagged as 'none').")
-            continue
-
-        if special_flag != "special":
-            if check_msys2_package_installed(msys2_package):
-                print(f"{msys2_package} is already installed. Skipping.")
-                continue
-            elif try_install_msys2_package(msys2_package):
-                print(f"Required package '{msys2_package}' installed successfully.")
+        if isinstance(info, dict):
+            url = info.get("url")
+            if not url:
+                print(f"No URL found for package {base}. Skipping.")
                 continue
 
-        extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
-        file_path = os.path.join(DOWNLOAD_DIR, filename)
+            filename = os.path.basename(url)
+            msys2_package = info["msys2_package"]
+            special_flag = info["special_flag"]
 
-        def task():
-            with current_lock:
-                current_value = current[0]
-                current[0] += 1
+            if special_flag == "none":
+                print(f"Skipping package {base} (flagged as 'none').")
+                continue
 
-            if CANCEL_FLAG:
-                print("Cancellation requested. Stopping download...")
-                return
+            if special_flag != "special":
+                if check_msys2_package_installed(msys2_package):
+                    print(f"{msys2_package} is already installed. Skipping.")
+                    continue
+                elif try_install_msys2_package(msys2_package):
+                    print(f"Required package '{msys2_package}' installed successfully.")
+                    continue
 
-            try:
-                remote_hash = get_remote_file_hash(url)
-                local_hash = get_local_file_hash(file_path)
+            extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
+            file_path = os.path.join(DOWNLOAD_DIR, filename)
 
-                if (
-                    os.path.exists(file_path)
-                    and os.path.exists(extract_path)
-                    and remote_hash
-                    and local_hash
-                    and remote_hash == local_hash
-                ):
-                    print(f"✓ [{current_value}/{total}] {filename} already downloaded and extracted (hash match). Skipping.")
+            def task():
+                with current_lock:
+                    current_value = current[0]
+                    current[0] += 1
+
+                if CANCEL_FLAG:
+                    print("Cancellation requested. Stopping download...")
                     return
 
-                if not os.path.exists(file_path) or remote_hash != local_hash:
-                    print(f"[{current_value}/{total}] Downloading {filename}...")
-                    with requests.get(url, stream=True, timeout=30) as r:
-                        r.raise_for_status()
-                        with open(file_path, "wb") as f:
-                            total_size = int(r.headers.get('content-length', 0))
-                            downloaded = 0
-                            for chunk in r.iter_content(chunk_size=1024):
-                                if chunk:
-                                    f.write(chunk)
-                                    downloaded += len(chunk)
-                                    print(f"\rDownloading {filename}: {downloaded/total_size*100:.2f}% complete", end="")
-                    print(f"\n✓ Downloaded {filename} ({total_size/1024/1024:.2f} MB)")
+                try:
+                    remote_hash = get_remote_file_hash(url)
+                    local_hash = get_local_file_hash(file_path)
 
-                if not os.path.exists(extract_path):
-                    print(f"[{current_value}/{total}] Extracting {filename}...")
-                    if filename.endswith((".tar.gz", ".tar.bz2", ".tar.xz", ".tgz")):
-                        with tarfile.open(file_path, "r:*") as tar:
-                            tar.extractall(path=extract_path)
-                    elif filename.endswith(".zip"):
-                        with zipfile.ZipFile(file_path, "r") as zip_ref:
-                            zip_ref.extractall(path=extract_path)
+                    if (
+                        os.path.exists(file_path)
+                        and os.path.exists(extract_path)
+                        and remote_hash
+                        and local_hash
+                        and remote_hash == local_hash
+                    ):
+                        print(f"✓ [{current_value}/{total}] {filename} already downloaded and extracted (hash match). Skipping.")
+                        return
+
+                    if not os.path.exists(file_path) or remote_hash != local_hash:
+                        print(f"[{current_value}/{total}] Downloading {filename}...")
+                        with requests.get(url, stream=True, timeout=30) as r:
+                            r.raise_for_status()
+                            with open(file_path, "wb") as f:
+                                total_size = int(r.headers.get('content-length', 0))
+                                downloaded = 0
+                                for chunk in r.iter_content(chunk_size=1024):
+                                    if chunk:
+                                        f.write(chunk)
+                                        downloaded += len(chunk)
+                                        print(f"\rDownloading {filename}: {downloaded/total_size*100:.2f}% complete", end="")
+                        print(f"\n✓ Downloaded {filename} ({total_size/1024/1024:.2f} MB)")
+
+                    if not os.path.exists(extract_path):
+                        print(f"[{current_value}/{total}] Extracting {filename}...")
+                        if filename.endswith((".tar.gz", ".tar.bz2", ".tar.xz", ".tgz")):
+                            with tarfile.open(file_path, "r:*") as tar:
+                                tar.extractall(path=extract_path)
+                        elif filename.endswith(".zip"):
+                            with zipfile.ZipFile(file_path, "r") as zip_ref:
+                                zip_ref.extractall(path=extract_path)
+                        else:
+                            print(f"Unknown file format: {filename}")
                     else:
-                        print(f"Unknown file format: {filename}")
-                else:
-                    print(f"{filename} already extracted. Skipping extraction.")
-            except Exception as e:
-                print(f"✗ [{current_value}/{total}] Failed {filename}: {e}")
+                        print(f"{filename} already extracted. Skipping extraction.")
+                except Exception as e:
+                    print(f"✗ [{current_value}/{total}] Failed {filename}: {e}")
 
-        futures.append(executor.submit(task))
-        downloaded_files.append(filename)
+            futures.append(executor.submit(task))
+            downloaded_files.append(filename)
 
     try:
         for future in as_completed(futures):
