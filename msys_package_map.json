@@ -120,7 +120,7 @@
         "description": "glibmm 2.56.1"
     },
     "gnome": {
-        "url": "http://ftp.acc.umu.se/pub/gnome/sources/gnome-doc-utils/0.20/gnome-doc-utils-0.20.10.tar.xz",
+        "url": "https://download.gnome.org/sources/gnome-doc-utils/0.20/gnome-doc-utils-0.20.10.tar.xz",
         "msys2_package": "mingw-w64-x86_64-gnome",
         "special_flag": "normal",
         "description": "gnome-doc-utils 0.20.10"
@@ -252,7 +252,7 @@
         "description": "lilv 0.24.13"
     },
     "0.5.1": {
-        "url": "https://github.com/x42/LRDF/archive/0.5.1-rg.tar.gz",
+        "url": "https://github.com/x42/LRDF/archive/refs/tags/0.5.1-rg.tar.gz",
         "msys2_package": "mingw-w64-x86_64-0.5.1",
         "special_flag": "normal",
         "description": "LRDF 0.5.1-rg"
@@ -342,7 +342,7 @@
         "description": "rasqal 0.9.32"
     },
     "4.1.2.tar.gz": {
-        "url": "https://github.com/RDFLib/rdflib/archive/4.1.2.tar.gz",
+        "url": "https://github.com/RDFLib/rdflib/archive/refs/tags/4.1.2.tar.gz",
         "msys2_package": "mingw-w64-x86_64-4.1.2.tar.gz",
         "special_flag": "normal",
         "description": "rdflib 4.1.2"
@@ -420,7 +420,7 @@
         "description": "uuid 1.6.2 (macOS)"
     },
     "vamp": {
-        "url": "https://code.soundsoftware.ac.uk/attachments/download/2588/vamp-plugin-sdk-2.9.0.tar.gz",
+        "url": "https://src.rrz.uni-hamburg.de/object/438294ad8e9cb6c3af89c995478247a6-417482-1580711902/vamp-plugin-sdk-2.9.0.zip",
         "msys2_package": "mingw-w64-x86_64-vamp",
         "special_flag": "normal",
         "description": "vamp-plugin-sdk 2.9.0"
