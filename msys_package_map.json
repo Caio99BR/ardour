@@ -332,13 +332,13 @@
     "raptor2": {
         "url": "http://download.librdf.org/source/raptor2-2.0.16.tar.gz",
         "msys2_package": "mingw-w64-x86_64-raptor2",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "raptor2 2.0.14"
     },
     "rasqal": {
         "url": "http://download.librdf.org/source/rasqal-0.9.32.tar.gz",
         "msys2_package": "mingw-w64-x86_64-rasqal",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "rasqal 0.9.32"
     },
     "4.1.2.tar.gz": {
@@ -356,7 +356,7 @@
     "redland": {
         "url": "http://download.librdf.org/source/redland-1.0.17.tar.gz",
         "msys2_package": "mingw-w64-x86_64-redland",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "redland 1.0.17"
     },
     "rubberband": {
