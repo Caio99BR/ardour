@@ -6,7 +6,7 @@ import tarfile
 import zipfile
 import shutil
 import subprocess
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 import json
 import hashlib
 import threading
@@ -21,6 +21,7 @@ INSTALL = False  # Set to True to run 'make install'
 MAX_THREADS = 4  # Adjust as needed (now supporting multiple threads)
 GENERATE_PACKAGE_MAP = False  # Set to True to generate the msys_package_map.json file
 USE_REMOTE_PACKAGE_MAP = False  # Set to True to use the remote package map (proceed with caution)
+PRINT_SKIP = False
 
 # Load package map from JSON file
 def load_msys2_package_map(file_path):
@@ -126,61 +127,59 @@ current = [1]  # Using a list to allow mutation across threads
 current[0] = 1
 downloaded_files = []
 
-with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
-    futures = []
+def task(base, info):
+    with current_lock:
+        installed = 0
+        current_value = current[0]
+        current[0] += 1  # Increment within the lock to ensure thread safety
 
-    def task(base, info):
-        with current_lock:
-            current_value = current[0]
-            current[0] += 1  # Increment within the lock to ensure thread safety
+    url = info.get("url")
+    filename = os.path.basename(url)
+    msys2_package = info["msys2_package"]
+    special_flag = info["special_flag"]
 
-        url = info.get("url")
-        filename = os.path.basename(url)
-        msys2_package = info["msys2_package"]
-        special_flag = info["special_flag"]
+    if not url:
+        print(f"[{current_value}/{total}] {msys2_package} URL found, skipping...")
+        return
 
-        if not url:
-            print(f"[{current_value}/{total}] {msys2_package} No URL found for package. Skipping.")
-            return
+    if special_flag == "none" or special_flag == "special":
+        if PRINT_SKIP:
+            print(f"[{current_value}/{total}] {msys2_package} flagged as '{special_flag}', skipping...")
+        return
 
-        if special_flag == "none":
-            print(f"[{current_value}/{total}] {msys2_package} Skipping package (flagged as 'none').")
-            return
+    # Check if the package is already installed or install it if not
+    result = subprocess.run(["pacman", "-Q", msys2_package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if result.returncode == 0:
+        if PRINT_SKIP:
+            print(f"[{current_value}/{total}] {msys2_package} is already installed. Skipping.")
+        installed = 1
+    else:
+        result = subprocess.run(["pacman", "-S", "--noconfirm", msys2_package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if result.returncode == 0:
+            if PRINT_SKIP:
+                print(f"[{current_value}/{total}] {msys2_package} successfully installed using pacman.")
+            installed = 1
 
-        # Check if the package is already installed or install it if not
-        if special_flag != "special":
-            try:
-                result = subprocess.run(["pacman", "-Q", msys2_package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                if result.returncode == 0:
-                    print(f"[{current_value}/{total}] {msys2_package} is already installed. Skipping.")
-                    return
-                result = subprocess.run(["pacman", "-S", "--noconfirm", msys2_package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                if result.returncode == 0:
-                    print(f"[{current_value}/{total}] {msys2_package} Successfully installed using pacman.")
-                    return
-            except Exception as e:
-                print(f"[{current_value}/{total}] {msys2_package} Error checking package: {e}. Proceeding with download and extraction.")
-
+    if installed == 0:
         try:
             # Check if the file already exists
             file_path = os.path.join(DOWNLOAD_DIR, filename)
             if os.path.exists(file_path):
-                print(f"[{current_value}/{total}] {msys2_package} {filename} already downloaded. Skipping.")
-                return
-
-            # Download the file
-            print(f"[{current_value}/{total}] {msys2_package} Downloading {filename}...")
-            with requests.get(url, stream=True, timeout=30) as r:
-                r.raise_for_status()
-                with open(file_path, "wb") as f:
-                    total_size = int(r.headers.get('content-length', 0))
-                    downloaded = 0
-                    for chunk in r.iter_content(chunk_size=1024):
-                        if chunk:
-                            f.write(chunk)
-                            downloaded += len(chunk)
-                            print(f"\r[{current_value}/{total}] {msys2_package} Downloading {filename}: {downloaded/total_size*100:.2f}% complete", end="")
-            print(f"\n[{current_value}/{total}] {msys2_package} Downloaded {filename} ({total_size/1024/1024:.2f} MB)")
+                print(f"[{current_value}/{total}] {msys2_package} {filename} already downloaded, skipping...")
+            else:
+                # Download the file
+                print(f"[{current_value}/{total}] {msys2_package} Downloading {filename}...")
+                with requests.get(url, stream=True, timeout=30) as r:
+                    r.raise_for_status()
+                    with open(file_path, "wb") as f:
+                        total_size = int(r.headers.get('content-length', 0))
+                        downloaded = 0
+                        for chunk in r.iter_content(chunk_size=1024):
+                            if chunk:
+                                f.write(chunk)
+                                downloaded += len(chunk)
+                                print(f"\r[{current_value}/{total}] {msys2_package} Downloading {filename}: {downloaded/total_size*100:.2f}% complete", end="")
+                print(f"\n[{current_value}/{total}] {msys2_package} Downloaded {filename} ({total_size/1024/1024:.2f} MB)")
         except Exception as e:
             print(f"[{current_value}/{total}] {msys2_package} Failed {filename}: {e}")
             return
@@ -200,33 +199,36 @@ with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
                     print(f"[{current_value}/{total}] {msys2_package} Unknown file format: {filename}")
                     return
             else:
-                print(f"[{current_value}/{total}] {msys2_package} {filename} already extracted. Skipping extraction.")
-
-            downloaded_files.append(filename)
+                print(f"[{current_value}/{total}] {msys2_package} {filename} already extracted, skipping...")
         except Exception as e:
             print(f"[{current_value}/{total}] {msys2_package} Failed {filename}: {e}")
             return
 
-    # Submit the tasks to the thread pool
+        # Add to the list only after extraction is done
+        with current_lock:
+            downloaded_files.append(extract_path)
+
+# Submit the tasks to the thread pool
+with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
+    futures = []
     for base, info in MSYS2_PACKAGE_MAP.items():
         if isinstance(info, dict):
             futures.append(executor.submit(task, base, info))
+    for future in futures:
+        future.result()
 
-    try:
-        for future in as_completed(futures):
-            future.result()
+if INSTALL:
+    for extract_path in downloaded_files:
+        print(f"Installing from {extract_path}...")
+        original_dir = os.getcwd()
+        subdirs = [f for f in os.listdir(extract_path) if os.path.isdir(os.path.join(extract_path, f))]
+        if len(subdirs) == 1:
+            build_dir = os.path.join(extract_path, subdirs[0])
+        else:
+            build_dir = extract_path
 
-        if INSTALL:
-            for filename in downloaded_files:
-                extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
-                print(f"Installing {filename}...")
-                original_dir = os.getcwd()
-                inner_dir = os.path.join(extract_path, filename.split('-')[0] + '-' + filename.split('-')[1])
-                os.chdir(inner_dir if os.path.exists(inner_dir) else extract_path)
-                os.system(f"./configure --prefix={INSTALL_DIR}")
-                os.system("make")
-                os.system("make install")
-                os.chdir(original_dir)
-
-    except Exception as e:
-        print(f"An error occurred during execution: {e}")
+        os.chdir(build_dir)
+        os.system(f"./configure --prefix={INSTALL_DIR}")
+        os.system("make")
+        os.system("make install")
+        os.chdir(original_dir)
