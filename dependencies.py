@@ -199,6 +199,7 @@ def download_and_extract(dep):
 
     url, filename, force_download = dep
     file_path = os.path.join(DOWNLOAD_DIR, filename)
+    extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
 
     # Check if the script has been cancelled
     if cancel_flag:
@@ -206,50 +207,51 @@ def download_and_extract(dep):
         return
 
     try:
-        # Compare hashes: if file exists and remote hash matches local hash, skip download
+        # Skip both download and extraction if file and extraction folder exist and hash matches
         remote_hash = get_remote_file_hash(url)
         local_hash = get_local_file_hash(file_path)
 
-        if remote_hash and local_hash and remote_hash == local_hash:
-            print(f"✓ {filename} already downloaded (hash match). Skipping download.")
+        if (
+            os.path.exists(file_path)
+            and os.path.exists(extract_path)
+            and remote_hash
+            and local_hash
+            and remote_hash == local_hash
+        ):
+            print(f"✓ {filename} already downloaded and extracted (hash match). Skipping.")
             return
 
         # Proceed with download if forced or hash mismatch
-        if force_download:
-            print(f"Force downloading {filename}...")
-        else:
-            print(f"Downloading {filename} from {url}...")
-
-        with requests.get(url, stream=True, timeout=30) as r:
-            r.raise_for_status()
-            with open(file_path, "wb") as f:
-                # Show download progress (total file size)
-                total_size = int(r.headers.get('content-length', 0))
-                downloaded = 0
-                for chunk in r.iter_content(chunk_size=1024):
-                    if chunk:
-                        f.write(chunk)
-                        downloaded += len(chunk)
-                        # Display download progress
-                        print(f"\rDownloading {filename}: {downloaded/total_size*100:.2f}% complete", end="")
+        if force_download or not os.path.exists(file_path) or remote_hash != local_hash:
+            print(f"{'Force downloading' if force_download else 'Downloading'} {filename}...")
+            with requests.get(url, stream=True, timeout=30) as r:
+                r.raise_for_status()
+                with open(file_path, "wb") as f:
+                    total_size = int(r.headers.get('content-length', 0))
+                    downloaded = 0
+                    for chunk in r.iter_content(chunk_size=1024):
+                        if chunk:
+                            f.write(chunk)
+                            downloaded += len(chunk)
+                            print(f"\rDownloading {filename}: {downloaded/total_size*100:.2f}% complete", end="")
             print(f"\n✓ Downloaded {filename} ({total_size/1024/1024:.2f} MB)")
 
-        # Extract
-        extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
+        # Extract only if not already extracted
         if not os.path.exists(extract_path):
             print(f"Extracting {filename}...")
             if filename.endswith((".tar.gz", ".tar.bz2", ".tar.xz", ".tgz")):
                 with tarfile.open(file_path, "r:*") as tar:
-                    tar.extractall(path=extract_path, filter=None)
+                    tar.extractall(path=extract_path)
             elif filename.endswith(".zip"):
                 with zipfile.ZipFile(file_path, "r") as zip_ref:
                     zip_ref.extractall(path=extract_path)
             else:
                 print(f"Unknown file format: {filename}")
         else:
-            print(f"{filename} already extracted.")
+            print(f"{filename} already extracted. Skipping extraction.")
     except Exception as e:
         print(f"✗ Failed {filename}: {e}")
+
 
 # Fetch the dependency list page
 response = requests.get(BASE_URL)
