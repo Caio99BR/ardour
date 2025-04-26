@@ -18,10 +18,9 @@ DOWNLOAD_DIR = "downloads"
 EXTRACT_DIR = "extracted"
 INSTALL_DIR = "/usr/local"  # Change this if you want to install elsewhere
 INSTALL = False  # Set to True to run 'make install'
-MAX_THREADS = 1  # Adjust as needed
+MAX_THREADS = 4  # Adjust as needed (now supporting multiple threads)
 GENERATE_PACKAGE_MAP = False  # Set to True to generate the msys_package_map.json file
 USE_REMOTE_PACKAGE_MAP = False  # Set to True to use the remote package map (proceed with caution)
-CANCEL_FLAG = False
 
 # Load package map from JSON file
 def load_msys2_package_map(file_path):
@@ -120,11 +119,6 @@ else:
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 os.makedirs(EXTRACT_DIR, exist_ok=True)
 
-# Allow cancellation of threaded tasks
-def cancel_execution():
-    global CANCEL_FLAG
-    CANCEL_FLAG = True
-
 # Main process: download, extract, and optionally install
 total = sum(1 for base in MSYS2_PACKAGE_MAP if isinstance(MSYS2_PACKAGE_MAP[base], dict))
 current_lock = threading.Lock()
@@ -134,108 +128,104 @@ downloaded_files = []
 with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
     futures = []
 
+    def task(base, info):
+        with current_lock:
+            current_value = current[0]
+            current[0] += 1
+
+        url = info.get("url")
+        filename = os.path.basename(url)
+        msys2_package = info["msys2_package"]
+        special_flag = info["special_flag"]
+
+        if not url:
+            print(f"[{current[0]}/{total}] {msys2_package} No URL found for package. Skipping.")
+            return
+
+        if special_flag == "none":
+            print(f"[{current[0]}/{total}] {msys2_package} Skipping package (flagged as 'none').")
+            return
+
+        # Check if the package is installed, or try to install it if not
+        if special_flag != "special":
+            try:
+                result = subprocess.run(["pacman", "-Q", msys2_package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                if result.returncode == 0:
+                    print(f"[{current[0]}/{total}] {msys2_package} is already installed. Skipping.")
+                    return
+                result = subprocess.run(["pacman", "-S", "--noconfirm", msys2_package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                if result.returncode == 0:
+                    print(f"[{current[0]}/{total}] {msys2_package} Successfully installed using pacman.")
+                    return
+            except Exception as e:
+                print(f"[{current[0]}/{total}] {msys2_package} Error checking package: {e}. Proceeding with download and extraction.")
+
+        try:
+            # Check if the file already exists
+            file_path = os.path.join(DOWNLOAD_DIR, filename)
+            if os.path.exists(file_path):
+                print(f"[{current_value}/{total}] {msys2_package} {filename} already downloaded. Skipping.")
+                return
+
+            # Download the file
+            print(f"[{current_value}/{total}] {msys2_package} Downloading {filename}...")
+            with requests.get(url, stream=True, timeout=30) as r:
+                r.raise_for_status()
+                with open(file_path, "wb") as f:
+                    total_size = int(r.headers.get('content-length', 0))
+                    downloaded = 0
+                    for chunk in r.iter_content(chunk_size=1024):
+                        if chunk:
+                            f.write(chunk)
+                            downloaded += len(chunk)
+                            print(f"\r[{current_value}/{total}] {msys2_package} Downloading {filename}: {downloaded/total_size*100:.2f}% complete", end="")
+            print(f"\n[{current_value}/{total}] {msys2_package} Downloaded {filename} ({total_size/1024/1024:.2f} MB)")
+        except Exception as e:
+            print(f"[{current_value}/{total}] {msys2_package} Failed {filename}: {e}")
+            return
+
+        try:
+            # Extract the file
+            extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
+            if not os.path.exists(extract_path):
+                print(f"[{current_value}/{total}] {msys2_package} Extracting {filename}...")
+                if filename.endswith((".tar.gz", ".tar.bz2", ".tar.xz", ".tgz")):
+                    with tarfile.open(file_path, "r:*") as tar:
+                        tar.extractall(path=extract_path)
+                elif filename.endswith(".zip"):
+                    with zipfile.ZipFile(file_path, "r") as zip_ref:
+                        zip_ref.extractall(path=extract_path)
+                else:
+                    print(f"[{current_value}/{total}] {msys2_package} Unknown file format: {filename}")
+                    return
+            else:
+                print(f"[{current_value}/{total}] {msys2_package} {filename} already extracted. Skipping extraction.")
+
+            downloaded_files.append(filename)
+        except Exception as e:
+            print(f"[{current_value}/{total}] {msys2_package} Failed {filename}: {e}")
+            return
+
+    # Submit tasks to the thread pool
     for base, info in MSYS2_PACKAGE_MAP.items():
         if isinstance(info, dict):
-            url = info.get("url")
-            filename = os.path.basename(url)
-            msys2_package = info["msys2_package"]
-            special_flag = info["special_flag"]
-
-            if not url:
-                print(f"[{current[0]}/{total}] {msys2_package} No URL found for package. Skipping.")
-                continue
-
-            if special_flag == "none":
-                print(f"[{current[0]}/{total}] {msys2_package} Skipping package (flagged as 'none').")
-                continue
-
-            # Check if the package is installed, or try to install it if not
-            if special_flag != "special":
-                try:
-                    result = subprocess.run(["pacman", "-Q", msys2_package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    if result.returncode == 0:
-                        print(f"[{current[0]}/{total}] {msys2_package} is already installed. Skipping.")
-                        continue
-                except Exception as e:
-                    print(f"[{current[0]}/{total}] {msys2_package} Error checking package: {e}. Proceeding with download and extraction.")
-
-                try:
-                    result = subprocess.run(["pacman", "-S", "--noconfirm", msys2_package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    if result.returncode == 0:
-                        print(f"[{current[0]}/{total}] {msys2_package} Successfully installed using pacman.")
-                        continue
-                    else:
-                        print(f"[{current[0]}/{total}] {msys2_package} Failed to install. Proceeding with download and extraction.")
-                except Exception as e:
-                    print(f"[{current[0]}/{total}] {msys2_package} Error checking package: {e}. Proceeding with download and extraction.")
-
-            extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
-            file_path = os.path.join(DOWNLOAD_DIR, filename)
-
-            def task():
-                with current_lock:
-                    current_value = current[0]
-                    current[0] += 1
-
-                if CANCEL_FLAG:
-                    print(f"[{current_value}/{total}] Cancellation requested. Stopping download...")
-                    return
-
-                try:
-                    # Check if the file already exists
-                    if os.path.exists(file_path):
-                        print(f"[{current_value}/{total}] {msys2_package} {filename} already downloaded. Skipping.")
-                        return
-
-                    # Download the file
-                    print(f"[{current_value}/{total}] {msys2_package} Downloading {filename}...")
-                    with requests.get(url, stream=True, timeout=30) as r:
-                        r.raise_for_status()
-                        with open(file_path, "wb") as f:
-                            total_size = int(r.headers.get('content-length', 0))
-                            downloaded = 0
-                            for chunk in r.iter_content(chunk_size=1024):
-                                if chunk:
-                                    f.write(chunk)
-                                    downloaded += len(chunk)
-                                    print(f"\r[{current_value}/{total}] {msys2_package} Downloading {filename}: {downloaded/total_size*100:.2f}% complete", end="")
-                    print(f"\n[{current_value}/{total}] {msys2_package} Downloaded {filename} ({total_size/1024/1024:.2f} MB)")
-
-                    # Extract the file
-                    extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
-                    if not os.path.exists(extract_path):
-                        print(f"[{current_value}/{total}] {msys2_package} Extracting {filename}...")
-                        if filename.endswith((".tar.gz", ".tar.bz2", ".tar.xz", ".tgz")):
-                            with tarfile.open(file_path, "r:*") as tar:
-                                tar.extractall(path=extract_path)
-                        elif filename.endswith(".zip"):
-                            with zipfile.ZipFile(file_path, "r") as zip_ref:
-                                zip_ref.extractall(path=extract_path)
-                        else:
-                            print(f"[{current_value}/{total}] {msys2_package} Unknown file format: {filename}")
-                    else:
-                        print(f"[{current_value}/{total}] {msys2_package} {filename} already extracted. Skipping extraction.")
-                except Exception as e:
-                    print(f"[{current_value}/{total}] {msys2_package} Failed {filename}: {e}")
-
-            futures.append(executor.submit(task))
-            downloaded_files.append(filename)
+            futures.append(executor.submit(task, base, info))
 
     try:
         for future in as_completed(futures):
             future.result()
-    except KeyboardInterrupt:
-        print(f"[{current[0]}/{total}] Process interrupted. Cancelling...")
-        cancel_execution()
 
-if INSTALL:
-    for filename in downloaded_files:
-        extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
-        print(f"Installing {filename}...")
-        original_dir = os.getcwd()
-        inner_dir = os.path.join(extract_path, filename.split('-')[0] + '-' + filename.split('-')[1])
-        os.chdir(inner_dir if os.path.exists(inner_dir) else extract_path)
-        os.system(f"./configure --prefix={INSTALL_DIR}")
-        os.system("make")
-        os.system("make install")
-        os.chdir(original_dir)
+        if INSTALL:
+            for filename in downloaded_files:
+                extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
+                print(f"Installing {filename}...")
+                original_dir = os.getcwd()
+                inner_dir = os.path.join(extract_path, filename.split('-')[0] + '-' + filename.split('-')[1])
+                os.chdir(inner_dir if os.path.exists(inner_dir) else extract_path)
+                os.system(f"./configure --prefix={INSTALL_DIR}")
+                os.system("make")
+                os.system("make install")
+                os.chdir(original_dir)
+
+    except Exception as e:
+        print(f"An error occurred during execution: {e}")
