@@ -1,0 +1,13 @@
+diff --git a/lrdf_types.h b/lrdf_types.h
+index abcdef1..1234567 100644
+--- a/lrdf_types.h
++++ b/lrdf_types.h
+@@ -1,6 +1,8 @@
+ #ifndef LRDF_TYPES_H
+ #define LRDF_TYPES_H
+ 
++#include <stdint.h>
++
+ typedef int64_t lrdf_hash;
+ 
+ #endif // LRDF_TYPES_H
