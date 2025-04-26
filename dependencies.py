@@ -8,6 +8,7 @@ import shutil
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
+import hashlib
 
 # Configuration
 BASE_URL = "https://nightly.ardour.org/list.php#build_deps"
@@ -16,7 +17,12 @@ EXTRACT_DIR = "extracted"
 INSTALL_DIR = "/usr/local"  # Change this if you want to install elsewhere
 INSTALL = False  # Set to True to run 'make install'
 MAX_THREADS = 4  # Adjust as needed
-GENERATE_PACKAGE_MAP = True  # Set to True to generate the msys_package_map.json file
+GENERATE_PACKAGE_MAP = False  # Set to True to generate the msys_package_map.json file
+FORCE_UPDATE = False  # Set to True to force the update of the list (ignores previous state)
+CHECK_FOR_CHANGES = True  # Set to True to check if the site has changed since the last update
+
+# Path to the msys_package_map.json file
+PACKAGE_MAP_FILE = 'msys_package_map.json'
 
 # Load the MSYS2 package map from an external JSON file
 def load_msys2_package_map(file_path):
@@ -26,6 +32,28 @@ def load_msys2_package_map(file_path):
     except FileNotFoundError:
         print(f"Warning: {file_path} not found. Proceeding without MSYS2 package map.")
         return {}
+
+# Save the site hash directly into the JSON file
+def save_site_hash_to_json(hash_value, file_path):
+    package_map = load_msys2_package_map(file_path)
+    package_map['site_hash'] = hash_value
+    with open(file_path, 'w') as f:
+        json.dump(package_map, f, indent=4)
+    print(f"Site hash {hash_value} saved to {file_path}")
+
+# Check if the page content has changed
+def check_site_for_changes():
+    # Fetch the dependency list page
+    response = requests.get(BASE_URL)
+    response.raise_for_status()
+    current_hash = hashlib.sha256(response.text.encode('utf-8')).hexdigest()
+
+    # Compare the current hash with the saved hash in JSON
+    saved_hash = load_msys2_package_map(PACKAGE_MAP_FILE).get('site_hash')
+    if saved_hash != current_hash:
+        save_site_hash_to_json(current_hash, PACKAGE_MAP_FILE)
+        return True
+    return False
 
 # Generate the MSYS2 package map file in JSON format based on the BASE_URL
 def generate_msys2_package_map(file_path):
@@ -52,7 +80,7 @@ def generate_msys2_package_map(file_path):
             base = filename.split('-')[0]
             # For now, we assume the MSYS2 package name is the same as the base (to be refined if needed)
             msys2_package = f"mingw-w64-x86_64-{base}"
-            # Extract description
+            # Extract description (e.g., "aubio 0.3.2")
             description = link.text.strip()
 
             # Determine the special flag: 'normal', 'special', or 'none'
@@ -69,7 +97,9 @@ def generate_msys2_package_map(file_path):
                 "description": description  # Add description to the JSON
             }
 
-        # Save the package map as JSON
+        # Save the package map as JSON and include the site hash
+        current_hash = hashlib.sha256(response.text.encode('utf-8')).hexdigest()
+        package_map['site_hash'] = current_hash
         with open(file_path, 'w') as f:
             json.dump(package_map, f, indent=4)
 
@@ -77,13 +107,21 @@ def generate_msys2_package_map(file_path):
     except Exception as e:
         print(f"Error generating MSYS2 package map: {e}")
 
-# If GENERATE_PACKAGE_MAP is True, generate the mapping and exit
-if GENERATE_PACKAGE_MAP:
-    generate_msys2_package_map('msys_package_map.json')
+# If FORCE_UPDATE is True, generate the mapping and exit
+if FORCE_UPDATE:
+    print("Forcing an update of the package list...")
+    generate_msys2_package_map(PACKAGE_MAP_FILE)
     exit()  # Exit after generating the map, without further processing
 
-# Load the MSYS2 package map (after generation if necessary)
-MSYS2_PACKAGE_MAP = load_msys2_package_map('msys_package_map.json')
+# If CHECK_FOR_CHANGES is True, check for changes and notify if necessary
+if CHECK_FOR_CHANGES:
+    if check_site_for_changes():
+        print("The Ardour dependency list has changed. Consider updating the package map.")
+    else:
+        print("No changes detected on the Ardour dependency list since the last update.")
+
+# Load the MSYS2 package map (after checking for changes or force update)
+MSYS2_PACKAGE_MAP = load_msys2_package_map(PACKAGE_MAP_FILE)
 
 # Ensure directories exist
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
