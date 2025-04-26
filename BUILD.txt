@@ -60,6 +60,7 @@ pacman -S --noconfirm \
     mingw-w64-ucrt-x86_64-vamp-plugin-sdk \
     mingw-w64-ucrt-x86_64-xz \
     mingw-w64-ucrt-x86_64-gtk-doc \
+    mingw-w64-ucrt-x86_64-yelp-tools \
     mingw-w64-ucrt-x86_64-zlib
 
 git clone https://github.com/Caio99BR/ardour
