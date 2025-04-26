@@ -123,6 +123,7 @@ os.makedirs(EXTRACT_DIR, exist_ok=True)
 total = sum(1 for base in MSYS2_PACKAGE_MAP if isinstance(MSYS2_PACKAGE_MAP[base], dict))
 current_lock = threading.Lock()
 current = [1]  # Using a list to allow mutation across threads
+current[0] = 1
 downloaded_files = []
 
 with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
@@ -131,7 +132,7 @@ with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
     def task(base, info):
         with current_lock:
             current_value = current[0]
-            current[0] += 1
+            current[0] += 1  # Increment within the lock to ensure thread safety
 
         url = info.get("url")
         filename = os.path.basename(url)
@@ -139,26 +140,26 @@ with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
         special_flag = info["special_flag"]
 
         if not url:
-            print(f"[{current[0]}/{total}] {msys2_package} No URL found for package. Skipping.")
+            print(f"[{current_value}/{total}] {msys2_package} No URL found for package. Skipping.")
             return
 
         if special_flag == "none":
-            print(f"[{current[0]}/{total}] {msys2_package} Skipping package (flagged as 'none').")
+            print(f"[{current_value}/{total}] {msys2_package} Skipping package (flagged as 'none').")
             return
 
-        # Check if the package is installed, or try to install it if not
+        # Check if the package is already installed or install it if not
         if special_flag != "special":
             try:
                 result = subprocess.run(["pacman", "-Q", msys2_package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 if result.returncode == 0:
-                    print(f"[{current[0]}/{total}] {msys2_package} is already installed. Skipping.")
+                    print(f"[{current_value}/{total}] {msys2_package} is already installed. Skipping.")
                     return
                 result = subprocess.run(["pacman", "-S", "--noconfirm", msys2_package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 if result.returncode == 0:
-                    print(f"[{current[0]}/{total}] {msys2_package} Successfully installed using pacman.")
+                    print(f"[{current_value}/{total}] {msys2_package} Successfully installed using pacman.")
                     return
             except Exception as e:
-                print(f"[{current[0]}/{total}] {msys2_package} Error checking package: {e}. Proceeding with download and extraction.")
+                print(f"[{current_value}/{total}] {msys2_package} Error checking package: {e}. Proceeding with download and extraction.")
 
         try:
             # Check if the file already exists
@@ -206,7 +207,7 @@ with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
             print(f"[{current_value}/{total}] {msys2_package} Failed {filename}: {e}")
             return
 
-    # Submit tasks to the thread pool
+    # Submit the tasks to the thread pool
     for base, info in MSYS2_PACKAGE_MAP.items():
         if isinstance(info, dict):
             futures.append(executor.submit(task, base, info))
