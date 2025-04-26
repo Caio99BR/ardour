@@ -4,7 +4,7 @@ pacman -S mingw-w64-x86_64-python mingw-w64-x86_64-python-requests mingw-w64-x86
 
 pacman -S mingw-w64-x86_64-toolchain --noconfirm
 
-pacman -S autoconf automake bison bisonc++ cmake gettext m4 tar libutil-linux-devel
+pacman -S autoconf automake bison bisonc++ cmake gettext m4 tar libutil-linux-devel perl-XML-Parser intltool libtool gtk-doc flex
 
 pacman -S \
     mingw-w64-x86_64-binutils \
@@ -32,15 +32,16 @@ pacman -S \
     mingw-w64-x86_64-itstool \
     mingw-w64-x86_64-libarchive \
     mingw-w64-x86_64-libffi \
-    mingw-w64-x86_64-libgnurx \
     mingw-w64-x86_64-libtiff \
-    mingw-w64-x86_64-pkg-config \
+    mingw-w64-x86_64-perl \
     mingw-w64-x86_64-readline \
     mingw-w64-x86_64-vamp-plugin-sdk \
     mingw-w64-x86_64-xz \
+    mingw-w64-x86_64-gtk-doc \
     mingw-w64-x86_64-zlib
 
- 
+https://git.openembedded.org/meta-openembedded/commit/?id=fe5b0235b1e8f7bb4cac1e81b44225053b797b2f
+
 git clone https://github.com/Caio99BR/ardour
 
 cp ardour/dependencies.py dependencies.py
