@@ -73,5 +73,3 @@ cp ardour/msys_package_map.json .
 export ACLOCAL_PATH=/ucrt64/share/aclocal
 
 python3.exe dependencies.py
-
-https://stackoverflow.com/questions/61215047/how-to-fix-libtool-undefined-symbols-not-allowed-in-x86-64-pc-msys-shared
