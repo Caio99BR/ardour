@@ -1,11 +1,11 @@
-
-´´´bash
 pacman -S python3 git python3-pip # MINGW
 
 pacman -S mingw-w64-x86_64-python mingw-w64-x86_64-python-requests mingw-w64-x86_64-python-beautifulsoup4 # MINGW
 
 pacman -S mingw-w64-x86_64-toolchain --noconfirm
-pacman -S autoconf automake bison bisonc++ cmake expat gettext glib2 itstool libarchive libffi make m4 readline tar zlib libutil-linux-devel
+
+pacman -S autoconf automake bison bisonc++ cmake gettext m4 tar libutil-linux-devel
+
 pacman -S \
     mingw-w64-x86_64-binutils \
     mingw-w64-x86_64-boost \
@@ -34,7 +34,6 @@ pacman -S \
     mingw-w64-x86_64-libffi \
     mingw-w64-x86_64-libgnurx \
     mingw-w64-x86_64-libtiff \
-    mingw-w64-x86_64-make \
     mingw-w64-x86_64-pkg-config \
     mingw-w64-x86_64-readline \
     mingw-w64-x86_64-vamp-plugin-sdk \
@@ -47,5 +46,3 @@ git clone https://github.com/Caio99BR/ardour
 cp ardour/dependencies.py dependencies.py
 
 python3.exe dependencies.py
-
-´´´
