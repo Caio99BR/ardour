@@ -18,8 +18,7 @@ INSTALL_DIR = "/usr/local"  # Change this if you want to install elsewhere
 INSTALL = False  # Set to True to run 'make install'
 MAX_THREADS = 4  # Adjust as needed
 GENERATE_PACKAGE_MAP = False  # Set to True to generate the msys_package_map.json file
-FORCE_UPDATE = False  # Set to True to force the update of the list (ignores previous state)
-CHECK_FOR_CHANGES = True  # Set to True to check if the site has changed since the last update
+USE_REMOTE_PACKAGE_MAP = False  # Set to True to use the remote package map (proceed with caution)
 
 # Path to the msys_package_map.json file
 PACKAGE_MAP_FILE = 'msys_package_map.json'
@@ -51,12 +50,13 @@ def check_site_for_changes():
     # Compare the current hash with the saved hash in JSON
     saved_hash = load_msys2_package_map(PACKAGE_MAP_FILE).get('site_hash')
     if saved_hash != current_hash:
-        save_site_hash_to_json(current_hash, PACKAGE_MAP_FILE)
+        if GENERATE_PACKAGE_MAP:
+            save_site_hash_to_json(current_hash, PACKAGE_MAP_FILE)
         return True
     return False
 
-# Generate the MSYS2 package map file in JSON format based on the BASE_URL
-def generate_msys2_package_map(file_path):
+# Generate the MSYS2 package map as a dictionary based on the BASE_URL
+def generate_msys2_package_map():
     try:
         # Fetch the dependency list page
         response = requests.get(BASE_URL)
@@ -97,31 +97,42 @@ def generate_msys2_package_map(file_path):
                 "description": description  # Add description to the JSON
             }
 
-        # Save the package map as JSON and include the site hash
+        # Include the site hash
         current_hash = hashlib.sha256(response.text.encode('utf-8')).hexdigest()
         package_map['site_hash'] = current_hash
-        with open(file_path, 'w') as f:
-            json.dump(package_map, f, indent=4)
+        
+        return package_map
 
-        print(f"MSYS2 package map successfully generated at {file_path}")
     except Exception as e:
         print(f"Error generating MSYS2 package map: {e}")
+        return {}
 
-# If FORCE_UPDATE is True, generate the mapping and exit
-if FORCE_UPDATE:
-    print("Forcing an update of the package list...")
-    generate_msys2_package_map(PACKAGE_MAP_FILE)
-    exit()  # Exit after generating the map, without further processing
+# Check for site changes and optionally update the package map
+site_changed = check_site_for_changes()
 
-# If CHECK_FOR_CHANGES is True, check for changes and notify if necessary
-if CHECK_FOR_CHANGES:
-    if check_site_for_changes():
-        print("The Ardour dependency list has changed. Consider updating the package map.")
+if site_changed:
+    print("The Ardour dependency list has changed.")
+    if GENERATE_PACKAGE_MAP:
+        print("Generating updated package map...")
+        MSYS2_PACKAGE_MAP = generate_msys2_package_map()  # Get updated map in memory
+        with open(PACKAGE_MAP_FILE, 'w') as f:
+            json.dump(MSYS2_PACKAGE_MAP, f, indent=4)  # Save the map to the file
+        print(f"Package map updated and saved to {PACKAGE_MAP_FILE}")
     else:
-        print("No changes detected on the Ardour dependency list since the last update.")
+        print("Changes detected but GENERATE_PACKAGE_MAP is False. Package map not updated.")
+else:
+    print("No changes detected on the Ardour dependency list.")
 
-# Load the MSYS2 package map (after checking for changes or force update)
-MSYS2_PACKAGE_MAP = load_msys2_package_map(PACKAGE_MAP_FILE)
+# Load the MSYS2 package map
+if not os.path.exists(PACKAGE_MAP_FILE):
+    print(f"Local package map not found! Using remote package map as fallback...")
+    MSYS2_PACKAGE_MAP = generate_msys2_package_map()  # Use the map from the site directly
+elif USE_REMOTE_PACKAGE_MAP:
+    print("Using remote package map (proceed with caution)...")
+    MSYS2_PACKAGE_MAP = generate_msys2_package_map()  # Use the map from the site directly
+else:
+    print("Using local package map from JSON file...")
+    MSYS2_PACKAGE_MAP = load_msys2_package_map(PACKAGE_MAP_FILE)
 
 # Ensure directories exist
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
