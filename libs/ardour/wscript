@@ -450,7 +450,7 @@ def build(bld):
         obj.includes += [ '../fst' ]
         obj.use += [ 'vstwin' ]
         obj.uselib += ['GDI32']
-    obj.uselib += ['BCRYPT']
+        obj.uselib += ['BCRYPT']
 
     if bld.is_defined('LXVST_SUPPORT'):
         obj.source += [ 'lxvst_plugin.cc', 'linux_vst_support.cc' ]
