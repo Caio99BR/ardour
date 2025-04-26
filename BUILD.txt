@@ -12,6 +12,11 @@ pacman -S mingw-w64-ucrt-x86_64-raptor \
              mingw-w64-ucrt-x86_64-redland \
              mingw-w64-ucrt-x86_64-libmariadbclient \
              mingw-w64-ucrt-x86_64-postgresql
+export CC=gcc
+export CXX=g++
+export AR=ar
+export RANLIB=ranlib
+export NM=nm
 pacman -S \
     mingw-w64-x86_64-yajl \
     mingw-w64-x86_64-binutils \
