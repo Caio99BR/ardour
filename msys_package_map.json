@@ -344,7 +344,7 @@
     "4.1.2.tar.gz": {
         "url": "https://github.com/RDFLib/rdflib/archive/4.1.2.tar.gz",
         "msys2_package": "mingw-w64-x86_64-4.1.2.tar.gz",
-        "special_flag": "normal",
+        "special_flag": "none",
         "description": "rdflib 4.1.2"
     },
     "readline": {
