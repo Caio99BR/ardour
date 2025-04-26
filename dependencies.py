@@ -18,7 +18,7 @@ DOWNLOAD_DIR = "downloads"
 EXTRACT_DIR = "extracted"
 INSTALL_DIR = "/usr/local"  # Change this if you want to install elsewhere
 INSTALL = False  # Set to True to run 'make install'
-MAX_THREADS = 4  # Adjust as needed
+MAX_THREADS = 1  # Adjust as needed
 GENERATE_PACKAGE_MAP = False  # Set to True to generate the msys_package_map.json file
 USE_REMOTE_PACKAGE_MAP = False  # Set to True to use the remote package map (proceed with caution)
 CANCEL_FLAG = False
@@ -185,7 +185,7 @@ with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
         if isinstance(info, dict):
             url = info.get("url")
             if not url:
-                print(f"No URL found for package {base}. Skipping.")
+                print(f"[{current[0]}/{total}] No URL found for package {base}. Skipping.")
                 continue
 
             filename = os.path.basename(url)
@@ -193,15 +193,15 @@ with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
             special_flag = info["special_flag"]
 
             if special_flag == "none":
-                print(f"Skipping package {base} (flagged as 'none').")
+                print(f"[{current[0]}/{total}] Skipping package {base} (flagged as 'none').")
                 continue
 
             if special_flag != "special":
                 if check_msys2_package_installed(msys2_package):
-                    print(f"{msys2_package} is already installed. Skipping.")
+                    print(f"[{current[0]}/{total}] {msys2_package} is already installed. Skipping.")
                     continue
                 elif try_install_msys2_package(msys2_package):
-                    print(f"Required package '{msys2_package}' installed successfully.")
+                    print(f"[{current[0]}/{total}] Required package '{msys2_package}' installed successfully.")
                     continue
 
             extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
@@ -213,7 +213,7 @@ with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
                     current[0] += 1
 
                 if CANCEL_FLAG:
-                    print("Cancellation requested. Stopping download...")
+                    print(f"[{current_value}/{total}] Cancellation requested. Stopping download...")
                     return
 
                 try:
@@ -266,7 +266,7 @@ with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
         for future in as_completed(futures):
             future.result()
     except KeyboardInterrupt:
-        print("Process interrupted. Cancelling...")
+        print(f"[{current[0]}/{total}] Process interrupted. Cancelling...")
         cancel_execution()
 
 if INSTALL:
