@@ -65,11 +65,29 @@ pacman -S --noconfirm \
     mingw-w64-ucrt-x86_64-yelp-tools \
     mingw-w64-ucrt-x86_64-zlib
 
+pacman -S mingw-w64-ucrt-x86_64-liblo \
+    mingw-w64-ucrt-x86_64-taglib \
+    mingw-w64-ucrt-x86_64-rubberband \
+    mingw-w64-ucrt-x86_64-libusb \
+    mingw-w64-x86_64-drmingw \
+    mingw-w64-ucrt-x86_64-drmingw \
+    mingw-w64-ucrt-x86_64-aubio \
+    mingw-w64-ucrt-x86_64-pangomm \
+    mingw-w64-ucrt-x86_64-libwebsockets \
+    mingw-w64-ucrt-x86_64-portaudio \
+    mingw-w64-ucrt-x86_64-serd \
+    mingw-w64-ucrt-x86_64-sord \
+    mingw-w64-ucrt-x86_64-sratom \
+    mingw-w64-ucrt-x86_64-lilv
+
 git clone https://github.com/Caio99BR/ardour
 
-cp ardour/dependencies.py .
-cp ardour/msys_package_map.json .
+#cp ardour/dependencies.py .
+#cp ardour/msys_package_map.json .
 
-export ACLOCAL_PATH=/ucrt64/share/aclocal
+#export ACLOCAL_PATH=/ucrt64/share/aclocal
 
-python3.exe dependencies.py
+#python3.exe dependencies.py
+
+
+git tag -a 7.9 -m "Ardour - Kill me Baby!"
