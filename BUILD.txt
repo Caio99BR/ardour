@@ -15,6 +15,7 @@ pacman -S \
     intltool \
     libtool \
     gtk-doc \
+    yelp-tools \
     flex
 
 pacman -S --noconfirm \
@@ -67,6 +68,8 @@ git clone https://github.com/Caio99BR/ardour
 
 cp ardour/dependencies.py .
 cp ardour/msys_package_map.json .
+
+export ACLOCAL_PATH=/ucrt64/share/aclocal
 
 python3.exe dependencies.py
 
