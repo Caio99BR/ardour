@@ -173,23 +173,32 @@ def download_and_extract(dep):
         if force_download:
             print(f"Force downloading {filename}...")
         else:
-            print(f"Downloading {filename}...")
+            print(f"Downloading {filename} from {url}...")
         
         with requests.get(url, stream=True, timeout=30) as r:
             r.raise_for_status()
-            with open(os.path.join(DOWNLOAD_DIR, filename), "wb") as f:
-                shutil.copyfileobj(r.raw, f)
-        print(f"✓ Downloaded {filename}")
+            file_path = os.path.join(DOWNLOAD_DIR, filename)
+            with open(file_path, "wb") as f:
+                # Show download progress (total file size)
+                total_size = int(r.headers.get('content-length', 0))
+                downloaded = 0
+                for chunk in r.iter_content(chunk_size=1024):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        # Display download progress
+                        print(f"\rDownloading {filename}: {downloaded/total_size*100:.2f}% complete", end="")
+            print(f"\n✓ Downloaded {filename} ({total_size/1024/1024:.2f} MB)")
 
         # Extract
         extract_path = os.path.join(EXTRACT_DIR, os.path.splitext(filename)[0])
         if not os.path.exists(extract_path):
             print(f"Extracting {filename}...")
             if filename.endswith((".tar.gz", ".tar.bz2", ".tar.xz", ".tgz")):
-                with tarfile.open(os.path.join(DOWNLOAD_DIR, filename), "r:*") as tar:
+                with tarfile.open(file_path, "r:*") as tar:
                     tar.extractall(path=extract_path, filter=None)
             elif filename.endswith(".zip"):
-                with zipfile.ZipFile(os.path.join(DOWNLOAD_DIR, filename), "r") as zip_ref:
+                with zipfile.ZipFile(file_path, "r") as zip_ref:
                     zip_ref.extractall(path=extract_path)
             else:
                 print(f"Unknown file format: {filename}")
