@@ -90,5 +90,5 @@ git clone https://github.com/Caio99BR/ardour
 
 git tag -a 7.9 -m "Ardour - Kill me Baby!"
 
-python3.exe waf configure --dist-target=mingw --prefix=/ucrt64 --configdir=/share --check-cxx-compiler=g++ --check-c-compiler=gcc --no-phone-home --ptformat --with-backends=jack,portaudio,dummy --internal-static-libs --internal-shared-libs
+python3.exe waf configure --dist-target=mingw --prefix=/ucrt64 --configdir=/share --check-cxx-compiler=g++ --check-c-compiler=gcc --no-phone-home --ptformat --with-backends=jack,portaudio,dummy --internal-static-libs --internal-shared-libs --optimize
 python3.exe waf build
