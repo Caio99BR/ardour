@@ -7,7 +7,7 @@ pacman -S mingw-w64-x86_64-toolchain --noconfirm
 pacman -S autoconf automake bison bisonc++ cmake gettext m4 tar libutil-linux-devel perl-XML-Parser intltool libtool gtk-doc flex libyajl
 
 pacman -S mingw-w64-clang-x86_64-raptor mingw-w64-clang-x86_64-rasqal  mingw-w64-clang-x86_64-redland
-
+pacman -S mingw-w64-clang-x86_64-libmariadbclient mingw-w64-clang-x86_64-postgresql
 pacman -S \
     mingw-w64-x86_64-yajl \
     mingw-w64-x86_64-binutils \
