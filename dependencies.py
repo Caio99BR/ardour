@@ -18,7 +18,7 @@ PACKAGE_MAP_FILE = 'msys_package_map.json'
 DOWNLOAD_DIR = "downloads"
 EXTRACT_DIR = "extracted"
 INSTALL_DIR = "/usr/local"  # Change this if you want to install elsewhere
-INSTALL = False  # Set to True to run 'make install'
+INSTALL = True  # Set to True to run 'make install'
 MAX_THREADS = 4  # Adjust as needed (now supporting multiple threads)
 GENERATE_PACKAGE_MAP = False  # Set to True to generate the msys_package_map.json file
 USE_REMOTE_PACKAGE_MAP = False  # Set to True to use the remote package map (proceed with caution)
@@ -227,16 +227,28 @@ with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
 
 if INSTALL:
     for extract_path in downloaded_files:
-        print(f"Installing from {extract_path}...")
         original_dir = os.getcwd()
         subdirs = [f for f in os.listdir(extract_path) if os.path.isdir(os.path.join(extract_path, f))]
         if len(subdirs) == 1:
             build_dir = os.path.join(extract_path, subdirs[0])
         else:
             build_dir = extract_path
-
+        print(f"Installing from {build_dir}...")
         os.chdir(build_dir)
-        os.system(f"./configure --prefix={INSTALL_DIR}")
-        os.system("make")
-        os.system("make install")
-        os.chdir(original_dir)
+        try:
+            if os.system("bash ./configure --prefix=" + INSTALL_DIR) != 0:
+                raise RuntimeError("Error during ./configure")
+
+            if os.system("bash make") != 0:
+                raise RuntimeError("Error during make")
+
+            if os.system("bash make install") != 0:
+                raise RuntimeError("Error during make install")
+
+        except subprocess.CalledProcessError as e:
+            print("Error during the build process:")
+            print("Failed command:", e.cmd)
+            print("Return code:", e.returncode)
+            sys.exit(1)
+        finally:
+            os.chdir(original_dir)
