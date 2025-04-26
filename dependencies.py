@@ -20,6 +20,9 @@ MAX_THREADS = 4  # Adjust as needed
 GENERATE_PACKAGE_MAP = False  # Set to True to generate the msys_package_map.json file
 USE_REMOTE_PACKAGE_MAP = False  # Set to True to use the remote package map (proceed with caution)
 
+# Set a global flag for cancellation
+cancel_flag = False
+
 # Path to the msys_package_map.json file
 PACKAGE_MAP_FILE = 'msys_package_map.json'
 
@@ -165,19 +168,60 @@ def try_install_msys2_package(package_name):
         print(f"Error installing {package_name}: {e}")
         return False
 
+# Function to cancel execution
+def cancel_execution():
+    global cancel_flag
+    cancel_flag = True
+
+# Get remote file hash
+def get_remote_file_hash(url):
+    try:
+        response = requests.head(url)
+        response.raise_for_status()
+        return response.headers.get("ETag")  # This might be a hash or unique identifier
+    except requests.RequestException as e:
+        print(f"Error getting file hash from {url}: {e}")
+        return None
+
+# Get local file hash
+def get_local_file_hash(file_path):
+    if not os.path.exists(file_path):
+        return None
+    hash_sha256 = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        while chunk := f.read(8192):
+            hash_sha256.update(chunk)
+    return hash_sha256.hexdigest()
+
 # Process each dependency (downloading and extracting)
 def download_and_extract(dep):
+    global cancel_flag  # Use the cancellation flag
+
     url, filename, force_download = dep
+    file_path = os.path.join(DOWNLOAD_DIR, filename)
+
+    # Check if the script has been cancelled
+    if cancel_flag:
+        print("Cancellation requested. Stopping download...")
+        return
+
     try:
-        # Download
+        # Compare hashes: if file exists and remote hash matches local hash, skip download
+        remote_hash = get_remote_file_hash(url)
+        local_hash = get_local_file_hash(file_path)
+
+        if remote_hash and local_hash and remote_hash == local_hash:
+            print(f"✓ {filename} already downloaded (hash match). Skipping download.")
+            return
+
+        # Proceed with download if forced or hash mismatch
         if force_download:
             print(f"Force downloading {filename}...")
         else:
             print(f"Downloading {filename} from {url}...")
-        
+
         with requests.get(url, stream=True, timeout=30) as r:
             r.raise_for_status()
-            file_path = os.path.join(DOWNLOAD_DIR, filename)
             with open(file_path, "wb") as f:
                 # Show download progress (total file size)
                 total_size = int(r.headers.get('content-length', 0))
@@ -271,8 +315,12 @@ for li in deps_section.find_all("li"):
 # Download and extract concurrently
 with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
     futures = [executor.submit(download_and_extract, dep) for dep in download_list]
-    for future in as_completed(futures):
-        future.result()  # exceptions will be printed from inside
+    try:
+        for future in as_completed(futures):
+            future.result()  # exceptions will be printed from inside
+    except KeyboardInterrupt:
+        print("Process interrupted. Cancelling...")
+        cancel_execution()
 
 # Install if requested
 if INSTALL:
