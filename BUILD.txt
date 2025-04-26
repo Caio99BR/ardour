@@ -1,18 +1,33 @@
-pacman -S python3 git python3-pip # MINGW
-
-pacman -S mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-python-requests mingw-w64-ucrt-x86_64-python-beautifulsoup4 # MINGW
-
-pacman -S mingw-w64-ucrt-x86_64-toolchain --noconfirm
-
-pacman -S autoconf automake bison bisonc++ cmake gettext m4 tar libutil-linux-devel perl-XML-Parser intltool libtool gtk-doc flex
-
-pacman -S mingw-w64-ucrt-x86_64-raptor \
-             mingw-w64-ucrt-x86_64-rasqal \
-             mingw-w64-ucrt-x86_64-redland \
-             mingw-w64-ucrt-x86_64-libmariadbclient \
-             mingw-w64-ucrt-x86_64-postgresql
-
 pacman -S \
+    python3 \
+    python3-pip \
+    git \
+    autoconf \
+    automake \
+    bison \
+    bisonc++ \
+    cmake \
+    gettext \
+    m4 \
+    tar \
+    libutil-linux-devel \
+    perl-XML-Parser \
+    intltool \
+    libtool \
+    gtk-doc \
+    flex
+
+pacman -S --noconfirm \
+    mingw-w64-ucrt-x86_64-python \
+    mingw-w64-ucrt-x86_64-python-requests \
+    mingw-w64-ucrt-x86_64-python-beautifulsoup4 \
+    mingw-w64-ucrt-x86_64-toolchain \
+    mingw-w64-ucrt-x86_64-raptor \
+    mingw-w64-ucrt-x86_64-rasqal \
+    mingw-w64-ucrt-x86_64-redland \
+    mingw-w64-ucrt-x86_64-libmariadbclient \
+    mingw-w64-ucrt-x86_64-postgresql \
+    mingw-w64-ucrt-x86_64-python-rdflib \
     mingw-w64-ucrt-x86_64-yajl \
     mingw-w64-ucrt-x86_64-binutils \
     mingw-w64-ucrt-x86_64-boost \
