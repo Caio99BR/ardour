@@ -11,8 +11,8 @@ cd $this_script_dir/../..
 test -f gtk2_ardour/wscript || exit 1
 
 # Defaults (overridden by environment)
-: ${XARCH=i686} # or x86_64
-: ${ROOT=/home/ardour}
+: ${XARCH=x86_64} # or x86_64
+: ${ROOT=${HOME}}
 : ${MAKEFLAGS=-j4}
 : ${TMPDIR=/var/tmp}
 : ${SRCCACHE=/var/tmp/winsrc}  # source-code tgz cache
@@ -105,7 +105,7 @@ else
 	WARCH=w32
 fi
 
-: ${PREFIX=${ROOT}/win-stack-$WARCH}
+: ${PREFIX=/mingw64}
 export SRCCACHE
 
 if [ "$(id -u)" = "0" ]; then
@@ -153,42 +153,47 @@ mkdir -p $ALIBDIR/vamp
 mkdir -p $ALIBDIR/suil
 
 # cp $PREFIX/lib/ardour*/*-*.dll $DESTDIR/bin/
-cp build/libs/gtkmm2ext/gtkmm2ext-*.dll $DESTDIR/bin/
-cp build/libs/midi++2/midipp-*.dll $DESTDIR/bin/
-cp build/libs/evoral/evoral-*.dll $DESTDIR/bin/
-cp build/libs/ardour/ardour-*.dll $DESTDIR/bin/
-cp build/libs/temporal/temporal-*.dll $DESTDIR/bin/
-cp build/libs/aaf/aaf-*.dll $DESTDIR/bin/
-cp build/libs/canvas/canvas-*.dll $DESTDIR/bin/
-cp build/libs/widgets/widgets-*.dll $DESTDIR/bin/
-cp build/libs/waveview/waveview-*.dll $DESTDIR/bin/
-cp build/libs/pbd/pbd-*.dll $DESTDIR/bin/
-cp build/libs/tk/ztk/ztk-*.dll $DESTDIR/bin/ || true
-cp build/libs/tk/ydk/ydk-*.dll $DESTDIR/bin/ || true
-cp build/libs/tk/ytk/ytk-*.dll $DESTDIR/bin/ || true
-cp build/libs/tk/ytkmm/ytkmm-*.dll $DESTDIR/bin/ || true
-cp build/libs/tk/ydkmm/ydkmm-*.dll $DESTDIR/bin/ || true
-cp build/libs/tk/ztkmm/ztkmm-*.dll $DESTDIR/bin/ || true
-cp build/libs/tk/ydk-pixbuf/ydk-pixbuf-*.dll $DESTDIR/bin/ || true
-cp build/libs/tk/suil/suil-*.dll $DESTDIR/bin/ || true
+cp build/libs/gtkmm2ext/gtkmm2ext*.dll $DESTDIR/bin/
+cp build/libs/midi++2/midipp*.dll $DESTDIR/bin/
+cp build/libs/evoral/evoral*.dll $DESTDIR/bin/
+cp build/libs/ardour/ardour*.dll $DESTDIR/bin/
+cp build/libs/temporal/temporal*.dll $DESTDIR/bin/
+cp build/libs/aaf/aaf*.dll $DESTDIR/bin/
+cp build/libs/canvas/canvas*.dll $DESTDIR/bin/
+cp build/libs/widgets/widgets*.dll $DESTDIR/bin/
+cp build/libs/waveview/waveview*.dll $DESTDIR/bin/
+cp build/libs/pbd/pbd*.dll $DESTDIR/bin/
+cp build/libs/tk/ztk/ztk*.dll $DESTDIR/bin/ || true
+cp build/libs/tk/ydk/ydk*.dll $DESTDIR/bin/ || true
+cp build/libs/tk/ytk/ytk*.dll $DESTDIR/bin/ || true
+cp build/libs/tk/ytkmm/ytkmm*.dll $DESTDIR/bin/ || true
+cp build/libs/tk/ydkmm/ydkmm*.dll $DESTDIR/bin/ || true
+cp build/libs/tk/ztkmm/ztkmm*.dll $DESTDIR/bin/ || true
+cp build/libs/tk/ydk-pixbuf/ydk-pixbuf*.dll $DESTDIR/bin/ || true
+cp build/libs/tk/suil/suil*.dll $DESTDIR/bin/ || true
 cp build/libs/ctrl-interface/midi_surface/ardour*.dll $DESTDIR/bin/
 cp build/libs/ctrl-interface/control_protocol/ardour*.dll $DESTDIR/bin/
-cp build/libs/ptformat/ptformat-*.dll $DESTDIR/bin/
-cp build/libs/audiographer/audiographer-*.dll $DESTDIR/bin/
+cp build/libs/ptformat/ptformat*.dll $DESTDIR/bin/
+cp build/libs/audiographer/audiographer*.dll $DESTDIR/bin/
 cp build/libs/fst/ardour-vst-scanner.exe $DESTDIR/bin/ || true
 cp build/libs/fst/ardour-vst3-scanner.exe $DESTDIR/bin/ || true
-cp build/session_utils/*-*.exe $DESTDIR/bin/ || true
+cp build/session_utils/*.exe $DESTDIR/bin/ || true
 cp build/luasession/ardour*-lua.exe $DESTDIR/bin/ || true
 cp `ls -t build/gtk2_ardour/ardour-*.exe | head -n1` $DESTDIR/bin/${PRODUCT_EXE}
 
 mkdir -p $DESTDIR/lib/gtk-2.0/engines
 cp build/libs/clearlooks-newer/clearlooks.dll $DESTDIR/lib/gtk-2.0/engines/libclearlooks.la
 
-cp $PREFIX/bin/*.dll $DESTDIR/bin/
-cp $PREFIX/bin/*.yes $DESTDIR/bin/ || true
-cp $PREFIX/lib/*.dll $DESTDIR/bin/
+cp ${PREFIX}/bin/*.dll "${DESTDIR}/bin/"
+cp ${PREFIX}/bin/*.yes "${DESTDIR}/bin/" || true
+cp ${PREFIX}/lib/*.dll "${DESTDIR}/bin/" || true
+cp ${PREFIX}/lib/*/*.dll "${DESTDIR}/bin/"
 # special case libportaudio (wasapi), old stack has no wasapi and hence no .xp
-cp $PREFIX/bin/libportaudio-2.xp $DESTDIR/bin/ || cp $PREFIX/bin/libportaudio-2.dll $DESTDIR/bin/libportaudio-2.xp
+if test -z "${ARDOURCFG}"; then
+	if test -f ${PREFIX}/include/pa_asio.h; then
+		cp $PREFIX/bin/libportaudio-2.xp $DESTDIR/bin/ || cp $PREFIX/bin/libportaudio-2.dll $DESTDIR/bin/libportaudio-2.xp
+	fi
+fi
 
 # prefer system-wide DLL
 rm -rf $DESTDIR/bin/libjack*.dll
@@ -221,16 +226,16 @@ for file in $PREFIX/lib/lv2/*.lv2; do
 done
 
 # TODO use -static-libgcc -static-libstdc++ -- but for .exe files only
-if update-alternatives --query ${XPREFIX}-gcc | grep Value: | grep -q win32; then
-	cp /usr/lib/gcc/${XPREFIX}/*-win32/libgcc_s_*.dll $DESTDIR/bin/
-	cp /usr/lib/gcc/${XPREFIX}/*-win32/libstdc++-6.dll $DESTDIR/bin/
-elif update-alternatives --query ${XPREFIX}-gcc | grep Value: | grep -q posix; then
-	cp /usr/lib/gcc/${XPREFIX}/*-posix/libgcc_s_*.dll $DESTDIR/bin/
-	cp /usr/lib/gcc/${XPREFIX}/*-posix/libstdc++-6.dll $DESTDIR/bin/
-else
-	cp /usr/lib/gcc/${XPREFIX}/*/libgcc_s_sjlj-1.dll $DESTDIR/bin/
-	cp /usr/lib/gcc/${XPREFIX}/*/libstdc++-6.dll $DESTDIR/bin/
-fi
+#if update-alternatives --query ${XPREFIX}-gcc | grep Value: | grep -q win32; then
+#	cp /usr/lib/gcc/${XPREFIX}/*-win32/libgcc_s_*.dll $DESTDIR/bin/
+#	cp /usr/lib/gcc/${XPREFIX}/*-win32/libstdc++-6.dll $DESTDIR/bin/
+#elif update-alternatives --query ${XPREFIX}-gcc | grep Value: | grep -q posix; then
+#	cp /usr/lib/gcc/${XPREFIX}/*-posix/libgcc_s_*.dll $DESTDIR/bin/
+#	cp /usr/lib/gcc/${XPREFIX}/*-posix/libstdc++-6.dll $DESTDIR/bin/
+#else
+	cp /mingw64/bin/libgcc_s_*.dll $DESTDIR/bin/
+	cp /mingw64/bin/libstdc++-6.dll $DESTDIR/bin/
+#fi
 #Ubuntu's 14.04's mingw needs this one for the std libs above
 if test -f /usr/${XPREFIX}/lib/libwinpthread-1.dll; then
 	cp /usr/${XPREFIX}/lib/libwinpthread-1.dll $DESTDIR/bin/
@@ -460,7 +465,7 @@ fi
 
 ################################################################################
 
-( cd $DESTDIR ; find . ) > ${TMPDIR}/file_list.txt
+( cd "$DESTDIR" && find . ) > "${TMPDIR}/file_list.txt"
 
 ################################################################################
 echo " === Preparing Windows Installer"
